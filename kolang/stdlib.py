@@ -20,7 +20,7 @@ from typing import Callable
 
 # Python の組み込み関数のうち、そのまま使うもの
 PYTHON_BUILTINS = ("abs", "bool", "chr", "float", "int", "len", "list", "max", "min",
-                   "ord", "range", "repr", "reversed", "round", "sorted", "str", "sum")
+                   "ord", "range", "round", "sorted", "str", "sum")
 
 # join / split / sort など、kolang で書けるものは標準ライブラリに足さず、lib/ に kolang で定義する（lib/NAME.ko）。
 # リストを縮める pop / remove / clear は持たない（新しいリストを作って書く）。

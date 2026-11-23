@@ -222,7 +222,7 @@ class LibFunctionsAreNotInStdlib(unittest.TestCase):
 
     def test_not_in_stdlib(self):
         from kolang.stdlib import NAMES
-        for name in ("join", "split", "slice", "sort", "any", "all", "lower", "pop", "remove", "clear"):
+        for name in ("join", "split", "slice", "sort", "any", "all", "lower", "input", "repr", "reversed", "pop", "remove", "clear"):
             self.assertNotIn(name, NAMES)
 
 
