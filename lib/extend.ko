@@ -1,0 +1,9 @@
+```pylike
+# extend(xs, ys): xs の後ろに ys の要素を足す（xs.extend(ys)）
+def extend(xs, ys):
+    tmp1 = 0
+    for _ in range(len(ys)):
+        y = ys[tmp1]
+        xs.append(y)
+        tmp1 += 1
+```

@@ -1,0 +1,8 @@
+>>> replace("banana", "an", "-")
+"b--a"
+>>> replace("aaa", "a", "bb")
+"bbbbbb"
+>>> replace("abc", "x", "y")
+"abc"
+>>> replace("abab", "ab", "")
+""

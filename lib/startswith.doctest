@@ -1,0 +1,10 @@
+>>> startswith("hello", "he")
+true
+>>> startswith("hello", "lo")
+false
+>>> startswith("hi", "hello")
+false
+>>> startswith("abc", "")
+true
+>>> startswith("", "")
+true

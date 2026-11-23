@@ -1,0 +1,10 @@
+>>> islower("abc")
+true
+>>> islower("aBc")
+false
+>>> islower("")
+false
+>>> islower("123")
+false
+>>> islower("a1 b")
+true

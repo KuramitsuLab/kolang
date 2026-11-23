@@ -1,0 +1,8 @@
+>>> any([0, 0, 1])
+true
+>>> any([])
+false
+>>> any([0, "", None])
+false
+>>> any(["a"])
+true

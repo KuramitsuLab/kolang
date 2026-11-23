@@ -1,0 +1,10 @@
+>>> endswith("hello", "lo")
+true
+>>> endswith("hello", "he")
+false
+>>> endswith("hi", "hello")
+false
+>>> endswith("abc", "")
+true
+>>> endswith("", "")
+true

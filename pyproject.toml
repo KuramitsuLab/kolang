@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kolang"
+version = "0.1.0"
+description = "kolang（こ言語）: 書き方（シンタックス）を選べる言語"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+[project.scripts]
+kolang = "kolang.cli:main"
+
+[tool.setuptools]
+packages = ["kolang"]
+
+[tool.setuptools.package-data]
+kolang = ["syntaxes/*.json"]

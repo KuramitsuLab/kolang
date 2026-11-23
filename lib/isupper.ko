@@ -1,0 +1,23 @@
+```pylike
+# isupper(s): 英字が 1 つ以上あり、すべて大文字（s.isupper()。ASCII だけ）
+def isupper(s):
+    cased = False
+    tmp1 = 0
+    for _ in range(len(s)):
+        c = s[tmp1]
+        o = ord(c)
+        tmp2 = False
+        if o >= 97:
+            if o <= 122:
+                tmp2 = True
+        if tmp2 == True:
+            return False
+        tmp3 = False
+        if o >= 65:
+            if o <= 90:
+                tmp3 = True
+        if tmp3 == True:
+            cased = True
+        tmp1 += 1
+    return cased
+```

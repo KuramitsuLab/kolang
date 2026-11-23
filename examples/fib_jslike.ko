@@ -1,0 +1,12 @@
+```jslike
+function fib(n) {if (n < 2) {return n;} else {return add(fib(sub(n, 1)), fib(sub(n, 2)));}}
+xs = [1, 2, 3];
+total = 0;
+for (let _ = 0; _ < 3; _++) {total++;}
+print("fib(10) =");
+print(fib(10));
+print(len(xs));
+print(total);
+>>> fib(10)
+55
+```

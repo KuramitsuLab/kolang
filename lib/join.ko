@@ -1,0 +1,16 @@
+```pylike
+# join(sep, xs): 文字列のリスト xs を sep でつなぐ（sep.join(xs)）
+def join(sep, xs):
+    r = ""
+    first = True
+    tmp1 = 0
+    for _ in range(len(xs)):
+        x = xs[tmp1]
+        if bool(first) == True:
+            first = False
+        else:
+            r = add(r, sep)
+        r = add(r, x)
+        tmp1 += 1
+    return r
+```

@@ -1,0 +1,8 @@
+>>> all([1, 1])
+true
+>>> all([])
+true
+>>> all([1, 0])
+false
+>>> all(["a", ""])
+false

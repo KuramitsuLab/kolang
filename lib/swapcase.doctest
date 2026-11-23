@@ -1,0 +1,8 @@
+>>> swapcase("Hello World")
+"hELLO wORLD"
+>>> swapcase("aBc")
+"AbC"
+>>> swapcase("")
+""
+>>> swapcase("1a2B")
+"1A2b"

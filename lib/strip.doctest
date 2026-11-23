@@ -1,0 +1,10 @@
+>>> strip("  hi there \\n")
+"hi there \\n"
+>>> strip("x")
+"x"
+>>> strip("   ")
+""
+>>> strip("")
+""
+>>> strip("\\ta b\\t")
+"\\ta b\\t"

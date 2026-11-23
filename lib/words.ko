@@ -1,0 +1,29 @@
+```pylike
+# words(s): 空白（連続は 1 つ）で分けたリスト（s.split() 引数なし。空白は ASCII）
+def words(s):
+    r = []
+    cur = ""
+    tmp1 = 0
+    for _ in range(len(s)):
+        c = s[tmp1]
+        tmp2 = False
+        if c == " ":
+            tmp2 = True
+        else:
+            tmp3 = False
+            if ord(c) >= 9:
+                if ord(c) <= 13:
+                    tmp3 = True
+            if tmp3 == True:
+                tmp2 = True
+        if tmp2 == True:
+            if cur != "":
+                r.append(cur)
+                cur = ""
+        else:
+            cur = add(cur, c)
+        tmp1 += 1
+    if cur != "":
+        r.append(cur)
+    return r
+```

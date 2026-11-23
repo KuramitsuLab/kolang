@@ -1,0 +1,12 @@
+xs = [1, 2, 3]
+reverse(xs)
+>>> xs
+[3, 2, 1]
+xs = [1, 2]
+reverse(xs)
+>>> xs
+[2, 1]
+xs = []
+reverse(xs)
+>>> xs
+[]

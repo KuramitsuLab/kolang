@@ -1,0 +1,26 @@
+```pylike
+# index(seq, x): seq（文字列かリスト）で、x（文字列なら部分文字列）が最初に現れる位置（seq.index(x)）
+#   見つからないときは、Python の ValueError ではなく -1 を返す
+def index(seq, x):
+    if str(seq) == seq:
+        m = len(x)
+        i = 0
+        for _ in range(add(sub(len(seq), m), 1)):
+            same = True
+            j = 0
+            for _ in range(m):
+                if seq[add(i, j)] != x[j]:
+                    same = False
+                    break
+                j += 1
+            if bool(same) == True:
+                return i
+            i += 1
+        return -1
+    i = 0
+    for _ in range(len(seq)):
+        if seq[i] == x:
+            return i
+        i += 1
+    return -1
+```

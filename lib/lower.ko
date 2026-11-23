@@ -1,0 +1,19 @@
+```pylike
+# lower(s): 小文字にする（s.lower()。ASCII の英字だけ）
+def lower(s):
+    r = ""
+    tmp1 = 0
+    for _ in range(len(s)):
+        c = s[tmp1]
+        o = ord(c)
+        tmp2 = False
+        if o >= 65:
+            if o <= 90:
+                tmp2 = True
+        if tmp2 == True:
+            r = add(r, chr(add(o, 32)))
+        else:
+            r = add(r, c)
+        tmp1 += 1
+    return r
+```

@@ -1,0 +1,11 @@
+```pylike
+# any(xs): xs の要素に、真のものがあるか（Python の any）
+def any(xs):
+    tmp1 = 0
+    for _ in range(len(xs)):
+        x = xs[tmp1]
+        if bool(x) == True:
+            return True
+        tmp1 += 1
+    return False
+```

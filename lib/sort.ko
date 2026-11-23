@@ -1,0 +1,21 @@
+```pylike
+# sort(xs): xs を小さい順に並べ替える（xs.sort() 引数なし。安定な挿入ソート）
+def sort(xs):
+    n = len(xs)
+    i = 1
+    for _ in range(sub(n, 1)):
+        x = xs[i]
+        j = sub(i, 1)
+        for _ in range(1000000000):
+            tmp1 = False
+            if j >= 0:
+                if xs[j] > x:
+                    tmp1 = True
+            if tmp1 == True:
+                xs[add(j, 1)] = xs[j]
+                j -= 1
+            else:
+                break
+        xs[add(j, 1)] = x
+        i += 1
+```

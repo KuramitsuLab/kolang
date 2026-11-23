@@ -1,0 +1,51 @@
+```pylike
+# strip(s): 前後の空白（ASCII）を取る（s.strip() 引数なし）
+def strip(s):
+    n = len(s)
+    a = 0
+    for _ in range(1000000000):
+        if a < n:
+            c = s[a]
+            tmp1 = False
+            if c == " ":
+                tmp1 = True
+            else:
+                tmp2 = False
+                if ord(c) >= 9:
+                    if ord(c) <= 13:
+                        tmp2 = True
+                if tmp2 == True:
+                    tmp1 = True
+            if tmp1 == True:
+                a += 1
+            else:
+                break
+        else:
+            break
+    b = n
+    for _ in range(1000000000):
+        if b > a:
+            c = s[sub(b, 1)]
+            tmp3 = False
+            if c == " ":
+                tmp3 = True
+            else:
+                tmp4 = False
+                if ord(c) >= 9:
+                    if ord(c) <= 13:
+                        tmp4 = True
+                if tmp4 == True:
+                    tmp3 = True
+            if tmp3 == True:
+                b -= 1
+            else:
+                break
+        else:
+            break
+    r = ""
+    i = a
+    for _ in range(sub(b, a)):
+        r = add(r, s[i])
+        i += 1
+    return r
+```

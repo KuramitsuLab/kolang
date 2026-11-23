@@ -1,0 +1,10 @@
+>>> isalpha("abc")
+true
+>>> isalpha("ab1")
+false
+>>> isalpha("")
+false
+>>> isalpha("A")
+true
+>>> isalpha("a b")
+false

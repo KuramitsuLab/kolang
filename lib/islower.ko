@@ -1,0 +1,23 @@
+```pylike
+# islower(s): 英字が 1 つ以上あり、すべて小文字（s.islower()。ASCII だけ）
+def islower(s):
+    cased = False
+    tmp1 = 0
+    for _ in range(len(s)):
+        c = s[tmp1]
+        o = ord(c)
+        tmp2 = False
+        if o >= 65:
+            if o <= 90:
+                tmp2 = True
+        if tmp2 == True:
+            return False
+        tmp3 = False
+        if o >= 97:
+            if o <= 122:
+                tmp3 = True
+        if tmp3 == True:
+            cased = True
+        tmp1 += 1
+    return cased
+```

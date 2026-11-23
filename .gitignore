@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+.DS_Store
+.pytest_cache/
+
+# HumanEval 系（いったん公開しない）
+/humaneval/
+/humaneval_gen/
+/humaneval.jsonl
+/humaneval.md
+/pyhumaneval.py
+/pyhumaneval.csv
+/pyhumaneval_samples.jsonl

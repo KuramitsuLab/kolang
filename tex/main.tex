@@ -1,0 +1,562 @@
+% withpage: ページ番号をつける (著者確認用)
+% english: 英語原稿用フォーマット
+\documentclass{ipsjprosym}
+%\documentclass[withpage,english]{ipsjprosym}
+
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{latexsym}
+\usepackage{booktabs,multirow}
+
+\begin{document}
+
+% Title, Author %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\title{LLM時代のプログラミング言語設計における\\構文とは？}
+
+\affiliate{1}{日本女子大学理学部\\
+Japan Women’s University, 2-8-1 Mejirodai,
+Bunkyo-ku, Tokyo 112–8681}
+%\affiliate{2}{日本女子大学大学院理学研究科}
+
+\author{長井 夢歩}{}{1}[m2316075ny@ug.jwu.ac.jp]
+\author{森部 七海}{}{1}
+\author{西潟 優羽}{}{1}
+\author{倉光 君郎}{}{1}
+
+\begin{abstract}
+LLMが獲得したプログラミング能力を新しい構文へ転移させるとき、構文設計のどの要素が影響するかを調べるため、構文可変な言語処理系kolangを開発した。
+kolangは、文法の骨格を固定し、区切りの記号をJSONの正規表現で差し替えることで、Python風、日本語風、Lisp風、JavaScript風などを同じ構文木として扱う。
+ベース構文はPython風とし、意味論はPythonに合わせた。
+本稿では、構文の可変化の設計と、パーサ、出力器、評価器、衝突検査からなる実装を報告する。
+HumanEvalの164問のうち159問がdoctestを通り、LLMとの親和度の予備測定により、シンタックスによって困惑度が異なることを確認した。
+\end{abstract}
+
+\begin{jkeyword}
+プログラミング・シンポジウム，冬，予稿集
+\end{jkeyword}
+
+\maketitle
+
+% Body %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{はじめに}
+
+大規模言語モデル（LLM)はプログラミング能力をどのように獲得しているのか。
+
+著者らの研究グループが一貫して問い続けている問いである。
+我々は、機械学習モデルを応用して自然言語からのコード生成に取り組み\cite{Akinobu2020Corpus,Akinobu2021NMT,Akinobu2022JIP,Kajiura2022APSEC}、T5\cite{Raffel2020T5,Kajiura2023JSSST}ベースの言語モデル、Llama2\cite{Touvron2023Llama2}ベースの小型コード生成言語モデル\cite{Obara2024xSIG}を開発してきた。その結果、得られた知見は、プログラミング能力を獲得するためには大量の学習用のデータ、少なくとも数GBオーダーのコード\cite{Souma2025Dataset}が必要であるという知見である。しかも、学習するデータは多ければ多いほど良い\cite{Kaplan2020Scaling}。
+
+この知見は、LLM時代の言語設計にある種の懸念を予兆させるものであった。なぜなら、現在の生成AIエージェントの開発の隆盛が進むとおり、プログラミングはLLMに大きく依存するようになる。すると、新言語は（もともとユーザを獲得し普及させることが大変であったが）、LLMのコード生成の支援が受けられないため、ますます普及しなくなる。その結果、学習データとなるコードも増えないという負の循環に陥ることも考えられる。つまり、人類は新しいプログラミング言語を作れなくなるのではないか、という懸念である。
+
+ところが中野ら\cite{Kuramitsu2026Nanako,Nakano2026ProSym}は、昨年の本シンポジウムで面白い現象を報告した。LLMが未学習であることを逆手にとって、LLMが生成できない教育言語を作る過程で、LLMが構文を文脈内学習で獲得して、プログラミング能力を確保する現象である。西潟らは\cite{Nishigata2026NLP,Moribe2026Untrained}、研究を進め、言語仕様より、コード例やエラー例を含めると、非常に高いプログラミング能力を獲得できることを確認した。
+
+この現象は、LLMが既に学習済みである言語能力を転移させることで実現していると考えられる。しかし、LLMの内部機構は複雑で、未解明の部分が大きい。ただし、既存知識を転移させているのなら、構文が転移にどのように影響を与えるかを調べることには意味がある。
+
+本研究の目的は、LLMが獲得したプログラミング能力を新しい構文に転移させるとき、構文設計のどの要素が転移に影響するかを調べることである。
+そのためには、意味論を固定したまま構文だけを自由に変えられる言語処理系が要る。
+従来の教育言語Yuiは、日本語とC言語が混ざった構文を持ち、意味論も独自であったため、構文の影響だけを切り出すには向かなかった。
+
+そこで本研究では、構文可変な言語処理系kolangを新たに開発した。
+kolangは、文法の骨格を固定し、区切りの記号をJSONの正規表現で差し替えることで、Python風、日本語風、Lisp風、JavaScript風などのシンタックスを、同じ構文木として扱う。
+ベース構文はPython風とし、意味論はPythonに合わせた。
+これにより、LLMが既に獲得しているPythonの能力を基準に、構文の違いだけの影響を測れる。
+
+本稿の貢献は次のとおりである。
+\begin{itemize}
+  \item 構文可変な言語kolangの設計（骨格の固定、区切りの正規表現による定義、語順の可変、Pythonの意味論）
+  \item パーサ、出力器、評価器、合成したシンタックスの衝突検査の実装と、HumanEval 164問のうち159問での動作確認
+  \item LLMとの親和度の予備測定
+\end{itemize}
+
+以降、2節でYuiを出発点にkolangへの要求を分析し、3節で設計、4節で実装と予備測定を報告し、5節で関連研究、6節でまとめを述べる。
+
+
+\section{どの構文を可変とするか}
+\label{sec:requirements}
+
+本節では、構文の影響を調べる言語処理系に必要な要求を分析する。
+議論の出発点として、教育プログラミング言語Yui~\cite{Kuramitsu2026Nanako}を取り上げる。
+Yuiは、日本語ベースの構文を持ち、代入、条件分岐、くり返し、関数定義、配列、オブジェクトだけを備える。
+図~\ref{fig:yui-sample}に最大公約数を求める関数の例を示す。
+
+\begin{figure}[t]
+\centering
+\begin{verbatim}
+標準ライブラリを使う
+
+gcd = 入力 a, b に対し {
+    最大値(a, b)回 くり返す {
+        もし b が 0 ならば {
+            くり返しを抜ける
+        }
+        次のb = 剰余(a, b)
+        a = b
+        b = 次のb
+    }
+    aが答え
+}
+\end{verbatim}
+\caption{Yuiによる最大公約数を求める関数}
+\label{fig:yui-sample}
+\end{figure}
+
+\subsection{Yuiから見えた課題}
+
+Yuiの例から、構文の影響を調べるうえでの課題が3つ見える。
+
+\begin{itemize}
+  \item \textbf{構文の由来が混ざっている:}
+    \verb|もし b が 0 ならば|は日本語として読めるが、\verb|{ }|のブロックや\verb|f(x, y)|はC言語由来である。
+    つまり、日本語とC言語のハイブリッドな構文であり、どちらもLLMは既に獲得している。
+    Yuiで得られた能力が、新しい構文の獲得なのか、既知の構文の組み合わせの学び直しなのか区別できない。
+  \item \textbf{意味論が独自である:}
+    Yuiには\verb|and|/\verb|or|/\verb|not|や中置演算子、\verb|while|がなく、
+    算術は関数（\verb|剰余(a, b)|）、反復は\verb|N回くり返す|と\verb|くり返しを抜ける|で書く。
+    Pythonのコードをそのまま写せず、構文を変えたときの差が、意味論の差と混ざる。
+  \item \textbf{構文を要素ごとに動かせない:}
+    記号、語順、識別子の字種などを、ひとつずつ変えて比べる仕組みがない。
+\end{itemize}
+
+\subsection{要求の整理}
+
+以上から、次の要求を立てた。
+
+\begin{description}
+  \item[R1 単一構文:] ひとつの意味にはひとつの書き方だけを与える。
+    Yuiは\verb|Aが答え|と\verb|Aを返す|の両方を認めていたが、複数の書き方と獲得しやすさの関係は別の問題なので範囲外とする。
+  \item[R2 ベース言語の連続的な変更:] 完全に日本語ベースの構文から、完全にプログラミング言語ベースの構文まで、構文を連続的に動かせる。
+  \item[R3 語彙と語順の差し替え:] 自然言語（学習リソースの量が異なる）や、疑似キーワードに差し替えられる。語順（SVOとSOV）も変えられる。
+  \item[R4 識別子の扱い:] 識別子は意味を持たないものとして、英数字を基本とする。ただし他の文字種も使えるようにし、その場合も構文があいまいにならない。
+  \item[R5 関数適用の記法:] $f(x, y)$、\verb|(f x y)|、並置、パイプなど、関数適用の記法を切り替えられる。
+  \item[R6 意味論の固定:] 構文だけを変えるため、意味論はひとつに固定する。LLMが既に獲得している言語（Python）に合わせる。
+  \item[R7 変換と検証:] どの構文で書いても同じ構文木になり、機械的に変換できる。要素を組み合わせたとき、読み戻せなくなる衝突を検出できる。
+\end{description}
+
+以降、R2〜R5の背景を述べる。
+
+\subsection{ベース言語と配分（R2）}
+
+LLMは、英語、日本語などの自然言語に加え、プログラミング言語やドメイン特化言語の構文を学んでいる。
+新しい構文は、既に獲得した構文知識を使って学ばれると考えられる。
+そのため、構文の影響を考えるには、日本語に近い構文から、プログラミング言語に近い構文（機能が制限された言語になる）まで、ベースを変えた版を並べて比べたい。
+
+\subsection{語彙と語順（R3）}
+
+LLMが学習した自然言語は、学習リソースの量により、言語能力に濃淡がある。
+日本語は中規模リソースの言語であるが、利用者が多く、商用LLMでは重点的に強化されている。
+ベースとなる自然言語を変えれば、学習リソースの配分の影響を調べられる。
+一方、プログラミング言語の予約語はたかだか数十語である。
+既存の言語と無関係な疑似キーワードをランダムに生成して差し替えれば、既存の知識を使えない場合の下限を測れる。
+
+多言語対応で重要なのは語順である。
+英語はSVO型で動詞が先に来るが、日本語はSOV型で動詞が最後に来る。
+この入れ替えの影響も調べられるようにする。
+
+\subsection{識別子（R4）}
+
+プログラミング言語の伝統的な設計論では、識別子は意味を持たないものとして扱う。
+一方、LLMのコード生成では、識別子の表す意味も無視できないと考えられる（変数名を置き換えると、内部表現の埋め込みベクトルは同じにならない）。
+ここでは伝統にしたがい、識別子は意味を持たないとして、英数字を基本にする。
+必要に応じて英数字以外も使えるよう、構文解析があいまいにならない構文を採用する。
+語の区切りは、空白に統一する。
+
+\subsection{関数適用の記法（R5）}
+
+関数は、条件分岐やくり返しに比べ、数学に由来する概念であり、オイラー以来$f(x, y)$という記法を使う。
+自然言語では、英語で\verb|f of x and y|、\verb|f of x comma y|、\verb|f at (x, y)|のように読む。
+\verb|f of x and y|は短いが、「$f(x)$と$y$」とも取れて曖昧である。
+関数適用を自然言語で囲むときは、括弧で囲んで曖昧さを残さない。
+また、プログラミング言語には、\verb|(f x y)|、\verb|f x y|（並置・カリー化）、\verb#x |> f y# などの記法もあり、これらも導入できるようにする。
+
+\subsection{要求と設計の対応}
+
+表~\ref{tab:req}に、要求と、次節以降の設計・実装の対応をまとめる。
+
+\begin{table}[t]
+\centering
+\caption{要求と設計の対応}
+\label{tab:req}
+\begin{tabular}{ll}
+\hline
+要求 & 設計・実装 \\
+\hline
+R1 単一構文     & 1つのASTに1つの書き方 \\
+R2 ベースの変更 & シンタックスの合成 \\
+R3 語彙・語順   & 区切りの正規表現、語順の可変 \\
+R4 識別子       & 字句の共通化 \\
+R5 関数適用     & 関数呼び出しの語順 \\
+R6 意味論       & Pythonの意味論 \\
+R7 変換・検証   & 出力器、衝突検査 \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{kolangの設計}
+\label{sec:design}
+
+前節の議論をふまえ、構文可変な言語処理系をkolangとして作り直した。
+kolangの特徴は次の2点である。
+
+\begin{itemize}
+  \item \textbf{構文が可変:} 文法の骨格は固定し、区切りの記号だけをJSONの正規表現で差し替える。
+  \item \textbf{意味論はPythonそのもの:} ベース構文はPython風（pylike）とし、評価はPythonの意味論に従う。
+\end{itemize}
+
+\subsection{骨格の固定と区切りの可変}
+
+kolangの文法は、代入、\verb|append|、増減、\verb|if|/\verb|else|、くり返し、\verb|break|、関数定義、\verb|return|、呼び出しの文と、変数、文字列、数、真偽、\verb|None|、リスト、符号の反転、関数呼び出し、添字の式からなる。
+この骨格は固定である。たとえば\verb|if|は、
+\begin{quote}
+\verb|if_begin <condition> if_then|\\
+\verb|  <block> <else>? if_end|
+\end{quote}
+という規則で定義し、\verb|if_begin|や\verb|if_then|などの小文字のトークン名が区切りを表す。
+各トークンは正規表現であり、シンタックス定義（JSON）がトークン名ごとに正規表現を与える。
+どのシンタックスで書いても同じ構文木（AST）になるため、あるシンタックスで書いたプログラムを別のシンタックスへ機械的に変換できる。
+図~\ref{fig:syntaxes}に、同じプログラムを4つのシンタックスで書いた例を示す。
+
+\begin{figure}[t]
+\centering
+\small
+\begin{verbatim}
+[pylike]
+def f(a):
+    if a == 1:
+        return 1
+    return 2
+f(1)
+
+[ja]
+関数 f(a)とは『もしaが1と等しいなら
+  『1を返す』2を返す』
+(1)におけるfの値
+
+[lisplike]
+(def f (a) (if (== a 1) (return 1))
+  (return 2))
+(f 1)
+
+[jslike]
+function f(a) {if (a === 1)
+  {return 1;}return 2;}
+f(1);
+\end{verbatim}
+\caption{同じプログラム（同じAST）の4つのシンタックス}
+\label{fig:syntaxes}
+\end{figure}
+
+構文の違いは、トークンの値（記号）、ブロックの境界の作り方（\verb|indent|か括弧か）、関数呼び出しの語順の3つに現れる。
+単一構文の原則により、ひとつの意味にはひとつの書き方だけを与える。
+
+\subsection{語順の可変}
+
+関数呼び出しは、\verb|f(x, y)|のように関数が先に来る\verb|func_first|と、
+日本語のように述語が最後に来る\verb|args_first|を選べる。
+日本語版では\verb|(x, y)におけるfの値|と書く。
+どちらも同じ\verb|Call|ノードに対応する。
+添字も、\verb|x[i]|（後置）、\verb|(get x i)|（前置）、\verb|xの(i)番目|のように、記号の置き方で変えられる。
+これにより、SVO型とSOV型の語順の違いが転移に与える影響を調べられる。
+
+\subsection{Pythonを意味論とする}
+
+意味論は、Pythonに合わせた。
+値はPythonのオブジェクトそのもので、演算とエラーの種類・メッセージもPythonに任せる。
+関数内の代入がローカルになる点、\verb|n回くり返す|が\verb|for _ in range(n)|に相当する点、再帰の深さの上限なども同じである。
+この選択には2つの理由がある。
+第一に、LLMがすでに獲得しているPythonのコード生成能力を最大限に転移の対象にできる。
+第二に、意味論をPythonで固定すれば、構文だけを変えたときの差を純粋に測れ、HumanEval\cite{Chen2021HumanEval}のような既存のベンチマークも、構文の変換だけで流用できる（他の言語への翻訳の例にMultiPL-E~\cite{Cassano2023MultiPLE}がある）。
+
+一方、Yuiと同様に、中置演算子は持たない。
+四則演算は標準ライブラリ関数（\verb|add(1, 2)|）で書く。
+演算子の優先順位や結合性を文法に持ち込まず、構文の曖昧さを減らすためである。
+標準ライブラリの関数名はシンタックスごとに変えられる。
+日本語版では\verb|add|を\verb|足し算|、\verb|print|を\verb|表示|と書く。
+変換器は、プログラムが自分で定義した名前を除いて、関数名も書き換える。
+
+\subsection{字句の共通化とレイアウト}
+
+識別子の方針（\ref{sec:requirements}節）に従い、数、文字列、識別子の字句規則は、全シンタックスで原則として共通にした。
+語の区切りは、空白か、トークンの最後の文字と直後の文字が同じ文字種（英数字など）かどうかで決める。
+日本語版でも、名前は英数字とし、漢字などは\verb|_合計_|のように引用して書ける。
+ブロックの表し方は、インデントによる\verb|indent|と、記号で囲む\verb|none|の2つである。
+
+\subsection{シンタックスの合成と衝突検査}
+
+構文要素を独立に入れ替えて影響を調べるため、シンタックスは要素ごとに重ねて合成できる。
+たとえば\verb|ja:jslike(assign,block,funcapp)|は、日本語版を土台に、代入、ブロック、関数呼び出しだけをJavaScript風にする。
+ただし、記号の組み合わせによっては、区切りが衝突して読み戻せなくなる。
+そこで、合成したシンタックスを読み込むときに衝突を検査し、警告で知らせる（\ref{sec:impl}節）。
+
+\section{kolangの実装}
+\label{sec:impl}
+
+kolangはPython 3（3.10以上）で実装した。
+パッケージ全体で約3,300行である。
+主なモジュールを次に示す。
+
+\begin{itemize}
+  \item \verb|syntax|: JSONの読み込み、検証、合成
+  \item \verb|combinators|, \verb|parser|, \verb|layout|: パーサ
+  \item \verb|unparser|, \verb|regexgen|: ASTからのソース出力
+  \item \verb|pyeval|, \verb|stdlib|: 評価器と標準ライブラリ
+  \item \verb|structure|, \verb|snippet|: 衝突検査
+  \item \verb|modelppl|: LLMとの親和度の測定
+\end{itemize}
+
+\subsection{パーサ}
+
+パーサは、パーサコンビネータ（選択、連接、繰り返し、省略可など）で、文法の1規則を1つの部品として書いた。
+文法を後から変更しやすいことを重視した。
+選択は順序つきで、失敗すると元の位置に戻るバックトラックを行う（PEGと同様）。
+字句解析器は持たない。
+トークンの正規表現を、入力の位置から直接照合する。
+トークンの前で、空白とコメントを読み飛ばす。
+語の区切りは、前節のとおり\verb|word_segment|で判定する。
+
+インデントによるブロックは、前処理でインデントの増減を仮想トークンに置き換え、\verb|none|のブロックと同じ文法で読む。
+後置の添字\verb|x[i]|は、左再帰になるため繰り返しで畳み込む。
+コメントは、読み飛ばした位置を記録しておき、構文解析のあとで、ASTの文に付ける。
+これにより、変換してもコメントが残る。
+
+\subsection{出力器と変換}
+
+出力器は、ASTからシンタックスの記号でソースを作る。
+トークンの正規表現から、書くべき文字列（固定文字列）を自動で求める。
+曖昧なものは、JSONの\verb|emit|で明示できる。
+変換\verb|kolang conv|は、出力したソースを、もう一度読み直してASTと比較する。
+これにより、変換が意味を変えていないことを毎回確かめる。
+
+\subsection{評価器}
+
+評価器\verb|pyeval|は、ASTのノードごとの\verb|visit_XXX|メソッドを持つVisitorである。
+値と演算はPythonに任せ、変数の参照・束縛・比較・呼び出しなど意味の核だけを別のメソッドにした。
+そのため、継承して上書きすれば、意味論を差し替えられる。
+テストでは、同じソースをPythonの\verb|exec|で実行した結果（出力、エラー、グローバル変数）と比較し、Python互換であることを確かめた。
+
+\subsection{衝突検査}
+
+シンタックスの合成では、区切りの衝突が起こりうる。
+読み込み時に2段階で検査する。
+第一に、トークンの定義だけを見る構造検査である。
+たとえば、インデント方式なのに\verb|if_end|が空でない、ブロックの終わりが決まらず次の文が本体に入ってしまう、といった組み合わせを文章で報告する。
+第二に、構造検査で見つからなかった合成について、用意した40個のAST（スニペット）を出力して読み戻し、元に戻らないものを報告する。
+全部で744通りの組み合わせのうち、52通りで衝突があり、すべて構造検査が見つけた。
+衝突のほとんどは、Lisp風のように閉じる括弧でブロックを表す構文と、他の構文を混ぜたときに起こる。
+
+\subsection{コマンドとテスト}
+
+\verb|kolang|コマンドは、実行（\verb|run|）、変換（\verb|conv|）、
+BNFの表示（\verb|show_ebnf|）、例の表示（\verb|show_example|）、
+親和度の測定（\verb|modelppl|）、pass@1の測定（\verb|pass@1|）を備える。
+\verb|.ko|ファイルは、1行目でシンタックスを指定するソースの形式で、同名の\verb|.doctest|があれば、実行後にdoctestとして照合する。
+
+HumanEval\cite{Chen2021HumanEval}の164問について、Pythonの解答をkolangへ機械的に移植したものと、問題文からkolangで書き起こしたものを合わせ、doctestがすべて通る問題の割合（pass@1）を測ったところ、159/164（97.0\%）であった。
+残りの5問は、移植できなかったか、doctestが通らないものである。
+kolangで書ける関数（\verb|join|、\verb|sort|など）は、標準ライブラリに足さず、kolangで定義して\verb|lib/|に置いた。
+
+\subsection{LLMとの親和度の予備測定}
+
+同じ40個のASTを、各シンタックスで出力し、コード生成言語モデル（Qwen2.5-Coder-1.5B-Instruct~\cite{Hui2024Qwen25Coder}）でトークンあたりの負の対数尤度から、
+困惑度（PPL）\cite{Hindle2012Naturalness}と、文字あたりのビット数（bpc）を求めた。
+予備測定の結果を表~\ref{tab:ppl}に示す。
+
+\begin{table}[t]
+\centering
+\caption{シンタックスごとの親和度（小さいほどよい）}
+\label{tab:ppl}
+\begin{tabular}{lrrr}
+\hline
+シンタックス & トークン数 & PPL & bpc \\
+\hline
+pylike   &  754 & 42.3 & 2.80 \\
+lisplike &  854 & 41.9 & 2.49 \\
+jslike   &  748 & 64.8 & 3.18 \\
+ja       & 1052 & 75.4 & 4.96 \\
+\hline
+\end{tabular}
+\end{table}
+
+Python風が最も低く、日本語版が最も高かった。
+一方、Lisp風はPPLがPython風と同程度で、bpcは最も低い。トークン数も構文によって大きく異なるため、比較にはトークン数に依存しないNLLやbpcも併せて見る必要がある。
+今後は、シンタックスの合成により、どの構文要素が影響するかを切り分ける。
+
+
+
+
+\section{関連研究}
+\label{sec:related}
+
+% 注意: 以下の記述は、論文の本文を読まずに、題目と要旨（検索結果）から書いた。要確認。
+
+\subsection{LLMに適したプログラミング言語の文法}
+
+LLMのコード生成を、構文の側から改善する研究がある。
+SimPy~\cite{Sun2024SimPy}は、Pythonと同じ構文木を保ったまま、文法を簡略化し、トークン数を減らす。
+Token Sugar~\cite{Sun2025TokenSugar}は、頻出するトークンの重いパターンを短縮形に置き換える。
+コードの整形（空白など）が、LLMの利用コストに影響するという報告もある~\cite{Pan2025Format}。
+これらは、構文木または意味論を固定して、構文だけを変える点でkolangと共通する。
+ただし目的は、トークンあたりのコストの削減である。
+kolangは、構文を可変にして、構文の要素が転移に与える影響を調べることを目的とする。
+また、プログラミング言語ごとのトークン消費の違いも報告されている~\cite{Wu2026Token}。
+
+構文と意味論の学習を分けて調べたものに、学習データにない最小の言語を使った研究がある~\cite{Kumar2026PyLang}。
+% 要確認: 構文はすぐ学習できるが、意味的に正しいプログラムは作れない、という報告とされる。
+本稿が、意味論をPythonに固定して、構文だけを動かす理由と、問題意識を共有している。
+プログラミング言語の系統の研究~\cite{Yun2025Families}も、LLMに親和的な言語を今後の課題として挙げている。
+
+\subsection{低リソース言語と新言語のコード生成}
+
+学習データが少ない言語では、LLMの性能が下がる~\cite{Joel2024Survey}。
+MultiPL-E~\cite{Cassano2023MultiPLE}は、HumanEvalを複数の言語へ翻訳したベンチマークである。
+MultiPL-T~\cite{Cassano2024MultiPLT}は、高リソース言語のコードを翻訳して、低リソース言語の学習データを作る。
+低リソース言語の対策には、決定的な方法がないという報告~\cite{Giagnorio2025NoSilver}や、
+学習データがほとんどない言語（no-resource言語）の評価~\cite{Giagnorio2026NoResource}もある。
+% 要確認: no-resource 言語の合格率は、低リソース言語より大幅に低いとされる。
+これらは、既存の言語を対象とするか、データを増やす方向の研究である。
+kolangは、意味論を保ったまま構文だけを新しくして、新しい構文への転移を調べる点で異なる。
+学習データの規模（The Stack~\cite{Kocetkov2022Stack}など）や、データ量と性能の関係~\cite{Kaplan2020Scaling}は、序論の問題意識の背景である。
+
+\subsection{構文可変・多言語の言語処理系}
+
+構文を拡張・変更できる言語処理系には、Racketの\verb|#lang|~\cite{Tobin2011Libraries}がある。
+Babylscript~\cite{Iu2011Babylscript}は、JavaScriptのキーワードを他の自然言語で書ける。
+日本語で書ける教育用言語としては、ドリトル~\cite{Kanemune2001Dolittle}がある。
+これらは人間の利用者のための可変性であり、LLMの学習・転移との関係は主題ではない。
+kolangの実装は、PEG~\cite{Ford2004PEG}の順序つき選択とバックトラック、およびパーサコンビネータ~\cite{Hutton1998Monadic}に基づく。
+
+\section{まとめ}
+
+本稿では、LLM時代の言語設計における構文の役割を調べるため、構文可変な言語処理系kolangを開発した。
+kolangは、文法の骨格と、Pythonに合わせた意味論を固定し、区切りの記号、ブロックの表し方、関数呼び出しの語順だけを可変にする。
+シンタックスは要素ごとに合成でき、衝突は読み込み時に検査して知らせる。
+HumanEvalでは159/164問が通り、予備測定ではシンタックスによって親和度が異なった。
+
+今後は、本稿の処理系を使い、構文の要素を独立に入れ替えたときの、LLMのコード生成能力への影響を調べる。
+そのために、複数のモデルでの測定、未学習の疑似キーワードを使った構文、データ型の拡張を進める。
+
+\begin{acknowledgment}
+謝辞が必要であれば，ここに書く．
+\end{acknowledgment}
+
+% 参考文献 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibliographystyle{ipsjsort}
+\bibliography{myrefs}
+
+\appendix
+
+\section{kolangの抽象構文}
+\label{app:syntax}
+
+表~\ref{tab:kolang-bnf}にkolangの抽象構文を示す。
+$X_{\mathrm{name}}$は、シンタックス定義（JSON）で差し替えられる区切り記号（トークン）で、添字がトークン名である。
+\texttt{"..."}は固定の終端記号、\textit{斜体}は非終端記号、$(\cdots)^{*}$は0回以上の繰り返し、$[\cdots]$は省略可能、$\mid$は選択を表す。
+\textit{letters}、\textit{number}、\textit{string}、\textit{characters}は字句の正規表現で、シンタックスごとに差し替えられるが、原則として全シンタックスで共通である。
+
+\begin{table*}[t]
+\begin{small}
+\caption{kolangの抽象構文}
+\label{tab:kolang-bnf}
+\centering
+\begin{tabular}{l p{8cm}}
+\hline
+非終端記号 & 定義 \\
+\hline
+\textit{program}     & ( \textit{statement} $\mid$ \textit{doctest} )* \\
+\textit{block}       & $X_{\mathrm{block\_begin}}$ ( \textit{statement} $X_{\mathrm{block\_sep}}$ )* $X_{\mathrm{block\_end}}$ \\
+\textit{statement}   & \textit{assign} $\mid$ \textit{append} $\mid$ \textit{inc} $\mid$ \textit{dec} $\mid$ \textit{if} $\mid$ \textit{repeat} \\
+                     & $\mid$ \textit{break} $\mid$ \textit{funcdef} $\mid$ \textit{return} $\mid$ \textit{funcapp} \\
+\textit{assign}      & $X_{\mathrm{assign\_begin}}$ \textit{expression} $X_{\mathrm{assign\_op}}$ \textit{expression} $X_{\mathrm{assign\_end}}$ \\
+\textit{append}      & $X_{\mathrm{append\_begin}}$ \textit{expression} $X_{\mathrm{append\_sep}}$ \textit{expression} $X_{\mathrm{append\_end}}$ \\
+\textit{inc}, \textit{dec} & $X_{\mathrm{inc\_begin}}$ \textit{variable} $X_{\mathrm{inc\_end}}$ $\mid$ $X_{\mathrm{dec\_begin}}$ \textit{variable} $X_{\mathrm{dec\_end}}$ \\
+\textit{if}          & $X_{\mathrm{if\_begin}}$ \textit{condition} $X_{\mathrm{if\_then}}$ \textit{block} [ \textit{else} ] $X_{\mathrm{if\_end}}$ \\
+\textit{condition}   & $X_{\mathrm{c\_begin}}$ \textit{expression} $X_{\mathrm{c\_sep}}$ \textit{expression} $X_{\mathrm{c\_end}}$ \quad ($\mathrm{c} \in \{\mathrm{eq}, \mathrm{ne}, \mathrm{lt}, \mathrm{gt}, \mathrm{le}, \mathrm{ge}\}$) \\
+\textit{else}        & $X_{\mathrm{else\_begin}}$ \textit{block} $X_{\mathrm{else\_end}}$ \\
+\textit{repeat}      & $X_{\mathrm{repeat\_begin}}$ \textit{expression} $X_{\mathrm{repeat\_do}}$ \textit{block} $X_{\mathrm{repeat\_end}}$ \\
+\textit{break}       & $X_{\mathrm{break}}$ \\
+\textit{funcdef}     & $X_{\mathrm{def\_begin}}$ \textit{identifier} $X_{\mathrm{def\_name\_end}}$ $X_{\mathrm{params\_begin}}$ \\
+                     & \quad ( \textit{identifier} $X_{\mathrm{param\_sep}}$ )* $X_{\mathrm{params\_end}}$ \textit{block} $X_{\mathrm{def\_end}}$ \\
+\textit{return}      & $X_{\mathrm{return\_begin}}$ \textit{expression} $X_{\mathrm{return\_end}}$ \\
+\textit{expression}  & \textit{variable} $\mid$ \textit{string} $\mid$ \textit{number} $\mid$ \textit{boolean} $\mid$ \textit{none} $\mid$ \textit{list} \\
+                     & $\mid$ $X_{\mathrm{neg\_begin}}$ \textit{expression} $X_{\mathrm{neg\_end}}$ $\mid$ \textit{funcapp} \\
+                     & $\mid$ $X_{\mathrm{grouping\_begin}}$ \textit{expression} $X_{\mathrm{grouping\_end}}$ \\
+\textit{boolean}     & $X_{\mathrm{true}}$ $\mid$ $X_{\mathrm{false}}$ \\
+\textit{none}        & $X_{\mathrm{none}}$ \\
+\textit{list}        & $X_{\mathrm{list\_begin}}$ ( \textit{expression} $X_{\mathrm{list\_sep}}$ )* $X_{\mathrm{list\_end}}$ \\
+\textit{variable}    & \textit{identifier} \\
+                     & $\mid$ \textit{variable} $X_{\mathrm{index\_begin}}$ \textit{expression} $X_{\mathrm{index\_end}}$ \quad (後置) \\
+                     & $\mid$ $X_{\mathrm{index\_begin}}$ \textit{variable} $X_{\mathrm{index\_sep}}$ \textit{expression} $X_{\mathrm{index\_end}}$ \quad (前置) \\
+\textit{identifier}  & \textit{letters} $\mid$ $X_{\mathrm{quote\_begin}}$ \textit{characters} $X_{\mathrm{quote\_end}}$ \\
+\textit{funcapp}     & $X_{\mathrm{call\_begin}}$ \textit{identifier} $X_{\mathrm{call\_name\_end}}$ ( \textit{expression} $X_{\mathrm{arg\_sep}}$ )* $X_{\mathrm{call\_end}}$ \quad (関数が先) \\
+                     & $X_{\mathrm{call\_begin}}$ ( \textit{expression} $X_{\mathrm{arg\_sep}}$ )* $X_{\mathrm{call\_name\_end}}$ \textit{identifier} $X_{\mathrm{call\_end}}$ \quad (引数が先) \\
+\textit{doctest}     & \verb|">>>"| \textit{funcapp} $\mid$ \textit{variable}\ \textit{LF}\ \textit{JSON} \\
+\hline
+\end{tabular}
+\end{small}
+\end{table*}
+
+\section{標準ライブラリ}
+\label{app:stdlib}
+
+kolangは中置演算子と\texttt{print}を持たず、演算や出力は標準ライブラリの関数で書く。
+関数はPythonのものをそのまま使い、値もエラーもPythonと同じである。
+関数名はシンタックスごとに変えられ、日本語版では表~\ref{tab:kolang-stdlib}の右端の名前になる。
+標準ライブラリで足りないものは、kolang自身で定義して\texttt{lib/}に置く（表~\ref{tab:kolang-lib}）。
+
+\begin{table}[t]
+\centering
+\caption{標準ライブラリの関数一覧}
+\label{tab:kolang-stdlib}
+\begin{small}
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{lll}
+\toprule
+分類 & 関数（標準名） & 日本語版 \\
+\midrule
+入出力     & \texttt{print}, \texttt{input} & \texttt{表示} \\
+\midrule
+\multirow{3}{*}{演算}
+ & \texttt{add}, \texttt{sub}   & \texttt{足し算}, \texttt{引き算} \\
+ & \texttt{mul}, \texttt{div}   & \texttt{掛け算}, \texttt{割り算} \\
+ & \texttt{mod}, \texttt{pow}   & \texttt{余り}, \texttt{べき乗} \\
+\midrule
+\multirow{3}{*}{数値}
+ & \texttt{abs}, \texttt{round} & \\
+ & \texttt{max}, \texttt{min}   & \\
+ & \texttt{sum}                 & \\
+\midrule
+\multirow{4}{*}{型変換}
+ & \texttt{int}, \texttt{float} & \texttt{整数化}, \texttt{小数化} \\
+ & \texttt{str}, \texttt{bool}  & \texttt{文字列化}, \texttt{ブール化} \\
+ & \texttt{list}, \texttt{repr} & \\
+ & \texttt{chr}, \texttt{ord} & \\
+\midrule
+\multirow{2}{*}{列}
+ & \texttt{len}, \texttt{range} & \\
+ & \texttt{sorted}, \texttt{reversed} & \\
+\midrule
+リスト操作 & \texttt{pop}, \texttt{remove}, \texttt{clear} & \\
+\bottomrule
+\end{tabular}
+\end{small}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{kolangで定義した関数（\texttt{lib/}）}
+\label{tab:kolang-lib}
+\begin{small}
+\begin{tabular}{ll}
+\toprule
+分類 & 関数 \\
+\midrule
+文字列 & \texttt{join}, \texttt{split}, \texttt{words}, \texttt{strip}, \texttt{replace} \\
+       & \texttt{upper}, \texttt{lower}, \texttt{swapcase} \\
+       & \texttt{startswith}, \texttt{endswith} \\
+       & \texttt{isalpha}, \texttt{isdigit}, \texttt{islower}, \texttt{isupper} \\
+列     & \texttt{count}, \texttt{index}, \texttt{slice} \\
+リスト & \texttt{sort}, \texttt{reverse}, \texttt{extend} \\
+論理   & \texttt{any}, \texttt{all} \\
+\bottomrule
+\end{tabular}
+\end{small}
+\end{table}
+
+\end{document}

@@ -1,0 +1,10 @@
+>>> words("a b  c")
+["a", "b", "c"]
+>>> words("  lead and trail  ")
+["lead", "and", "trail"]
+>>> words("")
+[]
+>>> words("tab\tsep\nnl")
+["tab", "sep", "nl"]
+>>> words("one")
+["one"]

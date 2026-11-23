@@ -1,0 +1,28 @@
+```pylike
+# isalpha(s): 空でなく、すべて英字（s.isalpha()。ASCII だけ）
+def isalpha(s):
+    if len(s) == 0:
+        return False
+    tmp1 = 0
+    for _ in range(len(s)):
+        c = s[tmp1]
+        o = ord(c)
+        tmp2 = False
+        tmp3 = False
+        if o >= 65:
+            if o <= 90:
+                tmp3 = True
+        if tmp3 == True:
+            tmp2 = True
+        else:
+            tmp4 = False
+            if o >= 97:
+                if o <= 122:
+                    tmp4 = True
+            if tmp4 == True:
+                tmp2 = True
+        if tmp2 != True:
+            return False
+        tmp1 += 1
+    return True
+```

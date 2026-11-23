@@ -1,0 +1,34 @@
+```pylike
+# split(s, sep): sep で分けたリスト（s.split(sep)。sep は空でない。空だと [] を返す）
+def split(s, sep):
+    r = []
+    cur = ""
+    n = len(s)
+    m = len(sep)
+    if m == 0:
+        return r
+    i = 0
+    for _ in range(1000000000):
+        if i < n:
+            found = True
+            if add(i, m) > n:
+                found = False
+            else:
+                j = 0
+                for _ in range(m):
+                    if s[add(i, j)] != sep[j]:
+                        found = False
+                        break
+                    j += 1
+            if bool(found) == True:
+                r.append(cur)
+                cur = ""
+                i = add(i, m)
+            else:
+                cur = add(cur, s[i])
+                i += 1
+        else:
+            break
+    r.append(cur)
+    return r
+```

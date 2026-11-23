@@ -1,0 +1,31 @@
+```pylike
+# replace(s, old, new): old を new に置き換える（s.replace(old, new)。old が空なら s のまま）
+def replace(s, old, new):
+    m = len(old)
+    if m == 0:
+        return s
+    r = ""
+    n = len(s)
+    i = 0
+    for _ in range(1000000000):
+        if i < n:
+            found = True
+            if add(i, m) > n:
+                found = False
+            else:
+                j = 0
+                for _ in range(m):
+                    if s[add(i, j)] != old[j]:
+                        found = False
+                        break
+                    j += 1
+            if bool(found) == True:
+                r = add(r, new)
+                i = add(i, m)
+            else:
+                r = add(r, s[i])
+                i += 1
+        else:
+            break
+    return r
+```

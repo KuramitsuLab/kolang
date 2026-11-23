@@ -1,0 +1,10 @@
+>>> upper("Hello World")
+"HELLO WORLD"
+>>> upper("abc")
+"ABC"
+>>> upper("ABC")
+"ABC"
+>>> upper("")
+""
+>>> upper("a1B2")
+"A1B2"

@@ -1,0 +1,13 @@
+```pylike
+# endswith(s, p): s が p で終わるか（s.endswith(p)）
+def endswith(s, p):
+    k = sub(len(s), len(p))
+    if k < 0:
+        return False
+    i = 0
+    for _ in range(len(p)):
+        if s[add(k, i)] != p[i]:
+            return False
+        i += 1
+    return True
+```

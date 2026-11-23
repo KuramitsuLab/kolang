@@ -1,0 +1,12 @@
+```pylike
+# startswith(s, p): s が p で始まるか（s.startswith(p)）
+def startswith(s, p):
+    if len(p) > len(s):
+        return False
+    i = 0
+    for _ in range(len(p)):
+        if s[i] != p[i]:
+            return False
+        i += 1
+    return True
+```

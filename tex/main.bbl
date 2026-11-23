@@ -1,0 +1,168 @@
+\begin{thebibliography}{10}
+
+\bibitem{Akinobu2022JIP}
+Akinobu, Y., Kajiura, T., Obara, M. and Kuramitsu, K.: {NMT}-Based Code
+  Generation for Coding Assistance with Natural Language, {\em Journal of
+  Information Processing},  Vol.~30, pp.\ 443--450 (2022).
+
+\bibitem{Akinobu2020Corpus}
+Akinobu, Y., Nuijima, E. and Kuramitsu, K.: Generating Parallel Corpus of
+  Python Code and Natural Language for Deep Learning, {\em 18th Asian Symposium
+  on Programming Languages and Systems (APLAS 2020)} (2020).
+
+\bibitem{Akinobu2021NMT}
+Akinobu, Y., Obara, M., Kajiura, T., Takano, S., Tamura, M., Tomioka, M. and
+  Kuramitsu, K.: Is Neural Machine Translation Approach Accurate Enough for
+  Coding Assistance?, {\em Proceedings of ACM Beyond Code No Code (BCNC)}
+  (2021).
+
+\bibitem{Cassano2024MultiPLT}
+Cassano, F., Gouwar, J., Lucchetti, F., Schlesinger, C., Anderson, C.~J.,
+  Feldman, M.~Q., Greenberg, M., Jangda, A. and Guha, A.: Knowledge Transfer
+  from High-Resource to Low-Resource Programming Languages for Code {LLM}s,
+  {\em Proceedings of the ACM on Programming Languages},  Vol.~8, No.~OOPSLA2,
+  pp.\ 677--708 (2024).
+
+\bibitem{Cassano2023MultiPLE}
+Cassano, F., Gouwar, J., Nguyen, D., Nguyen, S., Phipps-Costin, L., Pinckney,
+  D., Yee, M.-H., Zi, Y., Anderson, C.~J., Feldman, M.~Q., Guha, A., Greenberg,
+  M. and Jangda, A.: {MultiPL-E}: A Scalable and Polyglot Approach to
+  Benchmarking Neural Code Generation, {\em IEEE Transactions on Software
+  Engineering},  Vol.~49, No.~7, pp.\ 3675--3691 (2023).
+
+\bibitem{Chen2021HumanEval}
+Chen, M. et al.: Evaluating Large Language Models Trained on Code,
+  arXiv:2107.03374 (2021).
+
+\bibitem{Ford2004PEG}
+Ford, B.: Parsing Expression Grammars: A Recognition-Based Syntactic
+  Foundation, {\em Proceedings of the 31st ACM SIGPLAN-SIGACT Symposium on
+  Principles of Programming Languages (POPL 2004)}, pp.\ 111--122 (2004).
+
+\bibitem{Giagnorio2025NoSilver}
+Giagnorio, A., Martin-Lopez, A. and Bavota, G.: Enhancing Code Generation for
+  Low-Resource Languages: No Silver Bullet, arXiv:2501.19085 (2025).
+
+\bibitem{Giagnorio2026NoResource}
+Giagnorio, A., Martin-Lopez, A. and Bavota, G.: No Resource, No Benchmarks, No
+  Problem? Evaluating and Improving {LLM}s for Code Generation in No-Resource
+  Languages, arXiv:2606.16827 (2026).
+
+\bibitem{Hindle2012Naturalness}
+Hindle, A., Barr, E.~T., Su, Z., Gabel, M. and Devanbu, P.: On the Naturalness
+  of Software, {\em Proceedings of the 34th International Conference on
+  Software Engineering (ICSE 2012)}, pp.\ 837--847 (2012).
+
+\bibitem{Hui2024Qwen25Coder}
+Hui, B. et al.: Qwen2.5-Coder Technical Report, arXiv:2409.12186 (2024).
+
+\bibitem{Hutton1998Monadic}
+Hutton, G. and Meijer, E.: Monadic Parsing in {Haskell}, {\em Journal of
+  Functional Programming},  Vol.~8, No.~4, pp.\ 437--444 (1998).
+
+\bibitem{Iu2011Babylscript}
+Iu, M.-Y.: Babylscript: Multilingual {JavaScript}, SPLASH 2011 poster (2011).
+
+\bibitem{Joel2024Survey}
+Joel, S., Wu, J.~J. and Fard, F.~H.: A Survey on {LLM}-based Code Generation
+  for Low-Resource and Domain-Specific Programming Languages, arXiv:2410.03981
+  (2024).
+
+\bibitem{Kajiura2022APSEC}
+Kajiura, T., Souma, N., Sato, M., Takahashi, M. and Kuramitsu, K.: An
+  additional approach to pre-trained code model with multilingual natural
+  languages, {\em 29th Asia-Pacific Software Engineering Conference
+  (APSEC2022)} (2022).
+
+\bibitem{Kaplan2020Scaling}
+Kaplan, J., McCandlish, S., Henighan, T., Brown, T.~B., Chess, B., Child, R.,
+  Gray, S., Radford, A., Wu, J. and Amodei, D.: Scaling Laws for Neural
+  Language Models, arXiv:2001.08361 (2020).
+
+\bibitem{Kocetkov2022Stack}
+Kocetkov, D., Li, R., Allal, L.~B., Li, J., Mou, C., Ferrandis, C.~M., Jernite,
+  Y., Mitchell, M., Hughes, S., Wolf, T., Bahdanau, D., von Werra, L. and de
+  Vries, H.: The Stack: 3 {TB} of permissively licensed source code,
+  arXiv:2211.15533 (2022).
+
+\bibitem{Kumar2026PyLang}
+Kumar, V.~B., Makhija, D., Arivazhagan, M.~G. and Gangadharaiah, R.: Syntax
+  Without Semantics: Teaching Large Language Models to Code in an Unseen
+  Language, arXiv:2605.15607 (2026).
+
+\bibitem{Moribe2026Untrained}
+Moribe, N., Nishigata, Y. and Kuramitsu, K.: Why can {LLM}s generate code in an
+  untrained programming language?, {\em 17th Eiwa-JWU-Ochanomizu Joint
+  Symposium}, Seoul, Korea (2026).
+
+\bibitem{Pan2025Format}
+Pan, D., Sun, Z., Zhang, C., Lo, D. and Du, X.: The Hidden Cost of Readability:
+  How Code Formatting Silently Consumes Your {LLM} Budget, arXiv:2508.13666
+  (2025).
+
+\bibitem{Raffel2020T5}
+Raffel, C., Shazeer, N., Roberts, A., Lee, K., Narang, S., Matena, M., Zhou,
+  Y., Li, W. and Liu, P.~J.: Exploring the Limits of Transfer Learning with a
+  Unified Text-to-Text Transformer, {\em Journal of Machine Learning Research},
+   Vol.~21, No.~140, pp.\ 1--67 (2020).
+
+\bibitem{Souma2025Dataset}
+Souma, N., Obara, Y., Yokote, Y., Ishikawa, Y. and Kuramitsu, K.: Distributed
+  Dataset Framework for Large Language Models Pre-training, {\em Knowledge
+  Management and Acquisition for Intelligent Systems}, Lecture Notes in
+  Computer Science, Vol.~15372, Springer, pp.\ 289--297 (2025).
+
+\bibitem{Sun2024SimPy}
+Sun, Z., Du, X., Yang, Z., Li, L. and Lo, D.: {AI} Coders Are Among Us:
+  Rethinking Programming Language Grammar Towards Efficient Code Generation,
+  {\em Proceedings of the 33rd ACM SIGSOFT International Symposium on Software
+  Testing and Analysis (ISSTA 2024)} (2024).
+
+\bibitem{Sun2025TokenSugar}
+Sun, Z., Yang, C., Du, X., Yang, Z., Li, L. and Lo, D.: Token Sugar: Making
+  Source Code Sweeter for {LLM}s through Token-Efficient Shorthand,
+  arXiv:2512.08266 (2025).
+
+\bibitem{Tobin2011Libraries}
+Tobin-Hochstadt, S., St-Amour, V., Culpepper, R., Flatt, M. and Felleisen, M.:
+  Languages as Libraries, {\em Proceedings of the 32nd ACM SIGPLAN Conference
+  on Programming Language Design and Implementation (PLDI 2011)}, pp.\ 132--141
+  (2011).
+
+\bibitem{Touvron2023Llama2}
+Touvron, H. et al.: Llama 2: Open Foundation and Fine-Tuned Chat Models,
+  arXiv:2307.09288 (2023).
+
+\bibitem{Wu2026Token}
+Wu, Z., Anderson, C.~J. and Guha, A.: The Best Programming Language for
+  Tokenmaxxing: An Investigation of Coding Agent Behavior Across Programming
+  Languages, arXiv:2607.22807 (2026).
+
+\bibitem{Yun2025Families}
+Yun, S., Gu, X., Huang, J. and Shen, B.: Beyond Language Boundaries: Uncovering
+  Programming Language Families for Code Language Models, arXiv:2512.19509
+  (2025).
+
+\bibitem{Kuramitsu2026Nanako}
+倉光君郎，西潟優羽，中野乃梨子，土田悠佳\：ななこ：生成{AI}で生成できない新しいプログラミング言語，第67回 プログラミング・シンポジウム (2026).
+
+\bibitem{Kajiura2023JSSST}
+梶浦照乃，相馬菜生，佐藤美唯，倉光君郎\：多言語T5モデルへのPythonコードの追加学習，コンピュータソフトウェア， Vol.~40,
+  No.~4, pp.\ 1--12 (2023).
+
+\bibitem{Kanemune2001Dolittle}
+兼宗　進，御手洗理英，中谷多哉子，福井眞吾，久野　靖\：学校教育用オブジェクト指向言語「ドリトル」の設計と実装，情報処理学会論文誌 プログラミング， Vol.~42,
+  No.~SIG11 (PRO12), pp.\ 78--90 (2001).
+
+\bibitem{Nakano2026ProSym}
+中野乃梨子，土田悠佳，西潟優羽，倉光君郎\：{LLM}に新しいプログラミング言語を学習させるには？，第67回 プログラミング・シンポジウム (2026).
+
+\bibitem{Nishigata2026NLP}
+西潟優羽，中野乃梨子，土田悠佳，倉光君郎\：大規模言語モデルは新規言語のプログラミング能力をどう獲得するか？，言語処理学会 第32回年次大会 (NLP2026)
+  (2026).
+
+\bibitem{Obara2024xSIG}
+小原有以，相馬菜生，小原百々雅，佐藤美唯，梶浦照乃，倉光君郎\：とても軽量な日本語コードLLMの開発，情報処理学会 xSIG2024
+  (2024).
+
+\end{thebibliography}

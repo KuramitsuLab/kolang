@@ -1,0 +1,19 @@
+```pylike
+# upper(s): 大文字にする（s.upper()。ASCII の英字だけ）
+def upper(s):
+    r = ""
+    tmp1 = 0
+    for _ in range(len(s)):
+        c = s[tmp1]
+        o = ord(c)
+        tmp2 = False
+        if o >= 97:
+            if o <= 122:
+                tmp2 = True
+        if tmp2 == True:
+            r = add(r, chr(sub(o, 32)))
+        else:
+            r = add(r, c)
+        tmp1 += 1
+    return r
+```

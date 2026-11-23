@@ -1,0 +1,12 @@
+>>> count("banana", "a")
+3
+>>> count("aaaa", "aa")
+2
+>>> count("abc", "x")
+0
+>>> count("abc", "")
+4
+>>> count([1, 2, 1, 1], 1)
+3
+>>> count([], 3)
+0

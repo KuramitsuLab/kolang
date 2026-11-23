@@ -1,0 +1,11 @@
+```pylike
+# all(xs): xs の要素がすべて真か（Python の all）
+def all(xs):
+    tmp1 = 0
+    for _ in range(len(xs)):
+        x = xs[tmp1]
+        if bool(x) != True:
+            return False
+        tmp1 += 1
+    return True
+```

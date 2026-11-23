@@ -1,0 +1,10 @@
+>>> lower("Hello World")
+"hello world"
+>>> lower("ABC")
+"abc"
+>>> lower("abc")
+"abc"
+>>> lower("")
+""
+>>> lower("A1b2")
+"a1b2"

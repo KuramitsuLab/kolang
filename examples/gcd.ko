@@ -1,0 +1,15 @@
+```pylike
+# 互除法で最大公約数を求める（while がないので、十分大きい回数の for と break で書く）
+def gcd(a, b):
+    for _ in range(add(a, b)):
+        if b == 0:
+            break
+        t = mod(a, b)
+        a = b
+        b = t
+    return a
+
+print(gcd(48, 18))
+print(gcd(17, 5))
+print(gcd(0, 7))
+```

@@ -1,0 +1,10 @@
+>>> isupper("ABC")
+true
+>>> isupper("AbC")
+false
+>>> isupper("")
+false
+>>> isupper("123")
+false
+>>> isupper("A1 B")
+true

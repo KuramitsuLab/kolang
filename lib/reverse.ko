@@ -1,0 +1,15 @@
+```pylike
+# reverse(xs): xs を逆順にする（xs.reverse()）
+def reverse(xs):
+    i = 0
+    j = sub(len(xs), 1)
+    for _ in range(1000000000):
+        if i < j:
+            t = xs[i]
+            xs[i] = xs[j]
+            xs[j] = t
+            i += 1
+            j -= 1
+        else:
+            break
+```

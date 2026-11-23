@@ -1,0 +1,34 @@
+```pylike
+# count(seq, x): seq（文字列かリスト）に x（文字列なら重ならない部分文字列）がいくつあるか（seq.count(x)）
+def count(seq, x):
+    n = 0
+    if str(seq) == seq:
+        m = len(x)
+        if m == 0:
+            return add(len(seq), 1)
+        i = 0
+        for _ in range(1000000000):
+            if add(i, m) <= len(seq):
+                same = True
+                j = 0
+                for _ in range(m):
+                    if seq[add(i, j)] != x[j]:
+                        same = False
+                        break
+                    j += 1
+                if bool(same) == True:
+                    n += 1
+                    i = add(i, m)
+                else:
+                    i += 1
+            else:
+                break
+        return n
+    tmp1 = 0
+    for _ in range(len(seq)):
+        y = seq[tmp1]
+        if y == x:
+            n += 1
+        tmp1 += 1
+    return n
+```

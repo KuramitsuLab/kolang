@@ -1,0 +1,10 @@
+>>> isdigit("123")
+true
+>>> isdigit("12a")
+false
+>>> isdigit("")
+false
+>>> isdigit("0")
+true
+>>> isdigit(" 1")
+false

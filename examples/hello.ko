@@ -1,0 +1,23 @@
+```pylike
+# 九九の 3 の段を、リストにためて表示する
+def triple(n):
+    return mul(3, n)
+
+table = []
+i = 0
+for _ in range(5):
+    i += 1
+    table.append(triple(i))
+
+print("3の段:")
+print(table)
+if len(table) == 5:
+    print("5個そろった")
+else:
+    print("足りない")
+
+>>> triple(4)
+12
+>>> table
+[3, 6, 9, 12, 15]
+```

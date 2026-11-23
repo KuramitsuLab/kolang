@@ -1,0 +1,26 @@
+```pylike
+# swapcase(s): 大文字と小文字を入れ替える（s.swapcase()。ASCII の英字だけ）
+def swapcase(s):
+    r = ""
+    tmp1 = 0
+    for _ in range(len(s)):
+        c = s[tmp1]
+        o = ord(c)
+        tmp2 = False
+        if o >= 65:
+            if o <= 90:
+                tmp2 = True
+        if tmp2 == True:
+            r = add(r, chr(add(o, 32)))
+        else:
+            tmp3 = False
+            if o >= 97:
+                if o <= 122:
+                    tmp3 = True
+            if tmp3 == True:
+                r = add(r, chr(sub(o, 32)))
+            else:
+                r = add(r, c)
+        tmp1 += 1
+    return r
+```

@@ -1,0 +1,77 @@
+```pylike
+# slice(seq, start, stop, step): seq[start:stop:step]（文字列もリストも。省略は None）
+def slice(seq, start, stop, step):
+    n = len(seq)
+    if step == None:
+        step = 1
+    if step > 0:
+        if start == None:
+            start = 0
+        else:
+            if start < 0:
+                start = add(start, n)
+                if start < 0:
+                    start = 0
+            if start > n:
+                start = n
+        if stop == None:
+            stop = n
+        else:
+            if stop < 0:
+                stop = add(stop, n)
+                if stop < 0:
+                    stop = 0
+            if stop > n:
+                stop = n
+    else:
+        if start == None:
+            start = sub(n, 1)
+        else:
+            if start < 0:
+                start = add(start, n)
+                if start < 0:
+                    start = -1
+            if start > sub(n, 1):
+                start = sub(n, 1)
+        if stop == None:
+            stop = -1
+        else:
+            if stop < 0:
+                stop = add(stop, n)
+                if stop < 0:
+                    stop = -1
+            if stop > sub(n, 1):
+                stop = sub(n, 1)
+    tmp1 = False
+    if str(seq) == seq:
+        tmp1 = True
+    is_str = tmp1
+    r = []
+    if bool(is_str) == True:
+        r = ""
+    i = start
+    for _ in range(1000000000):
+        tmp2 = False
+        tmp3 = False
+        if step > 0:
+            if i < stop:
+                tmp3 = True
+        if tmp3 == True:
+            tmp2 = True
+        else:
+            tmp4 = False
+            if step < 0:
+                if i > stop:
+                    tmp4 = True
+            if tmp4 == True:
+                tmp2 = True
+        if tmp2 == True:
+            if bool(is_str) == True:
+                r = add(r, seq[i])
+            else:
+                r.append(seq[i])
+            i = add(i, step)
+        else:
+            break
+    return r
+```

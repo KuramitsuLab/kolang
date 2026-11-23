@@ -1,0 +1,47 @@
+This is upBibTeX, Version 0.99d-j0.36-u1.29 (utf8.euc) (TeX Live 2023)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: main.aux
+The style file: ipsjsort.bst
+Database file #1: myrefs.bib
+You've used 34 entries,
+            2669 wiz_defined-function locations,
+            817 strings with 12218 characters,
+and the built_in function-call counts, 14678 in all, are:
+= -- 1154
+> -- 915
+< -- 11
++ -- 367
+- -- 328
+* -- 1046
+:= -- 2173
+add.period$ -- 34
+call.type$ -- 34
+change.case$ -- 229
+chr.to.int$ -- 0
+cite$ -- 34
+duplicate$ -- 677
+empty$ -- 976
+format.name$ -- 467
+if$ -- 3183
+int.to.chr$ -- 0
+int.to.str$ -- 34
+missing$ -- 20
+newline$ -- 105
+num.names$ -- 68
+pop$ -- 463
+preamble$ -- 1
+purify$ -- 229
+quote$ -- 0
+skip$ -- 560
+stack$ -- 0
+substring$ -- 501
+swap$ -- 105
+text.length$ -- 38
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 136
+warning$ -- 0
+while$ -- 101
+width$ -- 36
+write$ -- 255
+is.kanji.str$ -- 398
