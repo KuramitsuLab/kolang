@@ -15,7 +15,7 @@ kolang（こ言語）の作業メモ。続きを始めるときは、まずこ�
 ## 作業ルール
 
 - 応答とドキュメントは**日本語**。コード中のコメントも日本語。
-- テスト: `python3 -m unittest discover -s tests -t .`（現在 277 件、すべて通る。2 件はスキップ）。変更したら必ず実行する。
+- テスト: `python3 -m unittest discover -s tests -t .`（現在 281 件、すべて通る。2 件はスキップ）。変更したら必ず実行する。
 - git リポジトリ。リモートは https://github.com/KuramitsuLab/kolang（public、ブランチ `main`）。HumanEval 系（`humaneval/` `humaneval_gen/` `humaneval.jsonl` `humaneval.md` `pyhumaneval*`）は、いったん公開しないので `.gitignore` に入れてある（手元には残す。履歴からも消した）。コミットや push はユーザーに頼まれたときだけ行う（公開されるので、push の前に確認する）。
 - `kolang` コマンドは、ユーザーの環境にはインストールしていない（`pip install -e .` は未実行）。動作確認は、スクラッチパッドの venv か `python3 -m kolang` で行った。
 - `kolang modelppl` は torch / transformers と HF モデル（既定 `Qwen/Qwen2.5-Coder-1.5B-Instruct`、キャッシュ済み）が要る。実測は約 1 分。`modelppl.csv` はプロジェクト直下に置いてあり、実行すると上書きされる。テストの `test_modelppl` は偽の採点関数なのでモデル不要（表が標準出力に出る）。
@@ -45,6 +45,7 @@ kolang/
   pyeval.py       評価器。Visitor（visit_XXX）。Python 互換。`python3 -m kolang.pyeval FILE [-f SYNTAX]`
   structure.py    構造検査 problems(syntax): トークン定義だけを見て、読み書きできない組み合わせを文章で返す
   snippet.py      カスケード検査用の AST スニペット（SNIPPETS。40 個）と failures(syntax)、表示用の show_snippets(syntax, names)
+  kolangeval.py   kolangeval.jsonl の評価（`kolang eval`）。pylike の正解を変換 → 読み直し → doctest。Solver を差し替えるとモデルの生成も採点できる
   modelppl.py     シンタックスと LLM の親和度。SNIPPETS を各シンタックスで出力 → HF モデルで NLL / PPL / bpc。`kolang modelppl`（`python3 -m kolang.modelppl` も可）。`modelppl.csv` の第一カラム syntax に NLL/tok/char/PPL/bpc を埋める（なければ作る）。説明は `modelppl.md`。torch・transformers は遅延 import。テストは偽の採点関数
   kofile.py       .ko ファイル（1 行目 ```シンタックス 〜 閉じの ``` までがコード）。split_ko / join_ko
   ebnf.py         show_ebnf(syntax): kolang.md の規則を、そのシンタックスの記号で書いた BNF（`kolang show_ebnf`）

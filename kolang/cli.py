@@ -10,6 +10,7 @@
     kolang run prog.ko                     .ko は 1 行目の ```シンタックス で指定（-f は不要）。
                                            同じ名前の prog.doctest があれば、続けてテストする
     kolang pass@1 humaneval/*.ko           .ko と .doctest を実行して pass@1 を計算する（--total 164 で分母を指定）
+    kolang eval SYNTAX [-i FILE]           kolangeval.jsonl の正解（pylike）を SYNTAX に変換し、doctest で動作を確かめる
     kolang modelppl [-s SYNTAX...]         シンタックスと LLM の親和度（NLL / PPL）。modelppl.csv を埋める
     kolang run prog.py [-f pylike]         実行する（Python 互換。doctest 風の例は答え合わせ）
 """
@@ -225,6 +226,43 @@ def pass_command(args: argparse.Namespace) -> int:
     return 0 if n_pass == len(results) else 1
 
 
+def build_eval_parser() -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(
+        prog="kolang eval",
+        description="kolangeval.jsonl の各問の正解コード（pylike）を SYNTAX に変換し、読み直して、"
+                    "doctest で動作を確かめる。pass@1（合格した問題の割合）を出す。",
+        epilog="終了コード: 0 すべて合格 / 1 不合格がある / 2 使い方の誤り。",
+    )
+    ap.add_argument("syntax", metavar="SYNTAX", help="名前、JSON のパス、カスケード（ja:jslike(assign,block)）")
+    ap.add_argument("-i", "--input", metavar="FILE", help="問題の jsonl（既定: kolangeval.jsonl）")
+    ap.add_argument("-t", "--task", metavar="ID", nargs="+",
+                    help="この問題だけ評価する（HumanEval/0 または 0）")
+    ap.add_argument("-q", "--quiet", action="store_true", help="不合格の問題だけ表示する")
+    return ap
+
+
+def eval_command(args: argparse.Namespace) -> int:
+    from .kolangeval import DEFAULT_FILE, evaluate, load_problems
+    syn = load(args.syntax)
+    problems = load_problems(args.input or DEFAULT_FILE)
+    total = len(problems)
+    if args.task:
+        wanted = {t if "/" in t else f"HumanEval/{t}" for t in args.task}
+        problems = [p for p in problems if p["task_id"] in wanted]
+        if not problems:
+            raise CliError(f"問題が見つかりません: {' '.join(args.task)}")
+        total = len(problems)
+    results = evaluate(syn, problems)
+    for r in results:
+        if r.ok and args.quiet:
+            continue
+        print(f"{'PASS' if r.ok else 'FAIL'}  {r.task_id}  doctest {r.passed}/{r.total}"
+              + (f"  {r.reason}" if r.reason else ""))
+    n_pass = sum(r.ok for r in results)
+    print(f"pass@1 = {n_pass}/{total} = {n_pass / total:.1%}  ({syn.name})")
+    return 0 if n_pass == total else 1
+
+
 def build_show_example_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
         prog="kolang show_example",
@@ -267,6 +305,8 @@ def main(argv: Optional[list] = None) -> int:
             return run_program(build_run_parser().parse_args(argv[1:]))
         if argv and argv[0] == "pass@1":
             return pass_command(build_pass_parser().parse_args(argv[1:]))
+        if argv and argv[0] == "eval":
+            return eval_command(build_eval_parser().parse_args(argv[1:]))
         if argv and argv[0] == "modelppl":
             from .modelppl import main as modelppl_main      # torch 系は測るときだけ読む
             return modelppl_main(argv[1:], prog="kolang modelppl")
