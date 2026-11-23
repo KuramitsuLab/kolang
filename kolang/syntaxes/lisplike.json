@@ -18,7 +18,8 @@
     "int": "int",
     "str": "str",
     "float": "float",
-    "bool": "bool"
+    "bool": "bool",
+    "list": "to_list"
   },
   "tokens": {
     "comment": { "begin": ";", "end": "(?=\\n)|\\Z" },
