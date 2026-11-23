@@ -1,0 +1,55 @@
+```pylike
+# 標準ライブラリの一巡: 全 22 個の関数を 1 回ずつ使う（pylike）。
+# 値も演算も Python のものなので、結果は Python と同じ。
+
+# --- 出力 ---
+print("print は何個でも引数にできる", 1, True, None)
+
+# --- 四則演算・剰余・べき乗（演算子はなく、関数で書く）---
+print(add(1, 2))            # 3
+print(sub(10, 4))           # 6
+print(mul(6, 7))            # 42
+print(div(7, 2))            # 3.5（真の除算。整数にしたいときは int で包む）
+print(mod(17, 5))           # 2
+print(pow(2, 10))           # 1024
+print(int(div(7, 2)))       # 3（切り捨て）
+
+# add は文字列・リストの連結にも使える
+print(add("ko", "lang"))    # kolang
+print(add([1, 2], [3]))     # [1, 2, 3]
+
+# --- 型の変換 ---
+print(int("123"))           # 123
+print(float("1.5"))         # 1.5
+print(str(3.5))             # 3.5（文字列）
+print(bool(0))              # False
+print(bool([1]))            # True
+print(list("abc"))          # ['a', 'b', 'c']
+print(list(range(4)))       # [0, 1, 2, 3]
+
+# --- 数 ---
+print(abs(-5))              # 5
+print(round(3.14159, 2))    # 3.14
+print(round(7.6))           # 8
+print(max(3, 9, 4))         # 9
+print(min([3, 9, 4]))       # 3
+print(sum([1, 2, 3, 4]))    # 10
+
+# --- 長さ・範囲・並べ替え ---
+print(len("kolang"))        # 6
+print(len([1, 2, 3]))       # 3
+print(range(3))             # range(0, 3)
+print(sorted([3, 1, 2]))    # [1, 2, 3]
+print(sorted(["b", "a"]))   # ['a', 'b']
+
+# --- 文字コード ---
+print(ord("A"))             # 65
+print(chr(97))              # a
+print(chr(add(ord("a"), 1)))  # b（次の文字）
+
+# --- 組み合わせの例: 平均を小数 1 桁で ---
+def average(xs):
+    return round(div(sum(xs), len(xs)), 1)
+
+print(average([1, 2, 3, 4]))    # 2.5
+```

@@ -1,0 +1,84 @@
+```pylike
+# リストと文字列の処理: 添字・append・入れ子のくり返し。
+# リストを縮める関数はないので、新しいリストを作って書く。
+
+# 逆順のリストを作る
+def reverse(xs):
+    r = []
+    i = len(xs)
+    for _ in range(len(xs)):
+        i -= 1
+        r.append(xs[i])
+    return r
+
+# 偶数だけを集める（filter）
+def evens(xs):
+    r = []
+    i = 0
+    for _ in range(len(xs)):
+        if mod(xs[i], 2) == 0:
+            r.append(xs[i])
+        i += 1
+    return r
+
+# 最大値の位置を返す（見つからなければ -1）
+def argmax(xs):
+    best = -1
+    i = 0
+    for _ in range(len(xs)):
+        if best < 0:
+            best = i
+        else:
+            if xs[i] > xs[best]:
+                best = i
+        i += 1
+    return best
+
+# 文字列を 1 文字ずつ見て、母音を数える
+def count_vowels(s):
+    vowels = "aeiou"
+    c = 0
+    i = 0
+    for _ in range(len(s)):
+        j = 0
+        for _ in range(len(vowels)):
+            if s[i] == vowels[j]:
+                c += 1
+            j += 1
+        i += 1
+    return c
+
+# バブルソート（添字への代入で、その場で入れ替える）
+def bubble_sort(xs):
+    n = len(xs)
+    for _ in range(n):
+        i = 0
+        for _ in range(sub(n, 1)):
+            if xs[i] > xs[add(i, 1)]:
+                t = xs[i]
+                xs[i] = xs[add(i, 1)]
+                xs[add(i, 1)] = t
+            i += 1
+    return xs
+
+# 素数判定（break で早く抜ける）
+def is_prime(n):
+    if n < 2:
+        return False
+    d = 1
+    for _ in range(n):
+        d += 1
+        if d >= n:
+            break
+        if mod(n, d) == 0:
+            return False
+    return True
+
+print(reverse([1, 2, 3, 4]))
+print(evens([1, 2, 3, 4, 5, 6]))
+print(argmax([3, 9, 4]))
+print(count_vowels("kolang is fun"))
+print(bubble_sort([5, 2, 9, 1]))
+print(is_prime(13))
+print(is_prime(15))
+```

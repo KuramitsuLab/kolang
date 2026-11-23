@@ -1,0 +1,20 @@
+```pylike
+# FizzBuzz: for と if と mod の定番。
+# and / or がないので、15 の倍数を先に調べる。
+def fizzbuzz(n):
+    i = 0
+    for _ in range(n):
+        i += 1
+        if mod(i, 15) == 0:
+            print("FizzBuzz")
+        else:
+            if mod(i, 3) == 0:
+                print("Fizz")
+            else:
+                if mod(i, 5) == 0:
+                    print("Buzz")
+                else:
+                    print(i)
+
+fizzbuzz(15)
+```

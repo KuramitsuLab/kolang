@@ -156,6 +156,21 @@ class PassAt1(unittest.TestCase):
                 f.write(doctest)
         return path
 
+    def test_cov(self):
+        code = ("def add(a, b):\n    return a\n"                         # 自作の add は標準として数えない
+                "if 1 == 2:\n    print(add(1, 2))\nelse:\n    print(mul(2, 3))\n"
+                "xs = []\nxs.append(len(xs))\nprint(1)\n>>> len(xs)\n1\n")
+        with tempfile.TemporaryDirectory() as d:
+            a = self.make(d, "a", code)
+            rc, out, _ = run("cov", a)
+            self.assertEqual(rc, 0)
+            row = {l.split()[0]: l.split()[1] for l in out.splitlines() if len(l.split()) >= 2 and l.split()[1].isdigit()}
+            self.assertEqual((row["Compare(==)"], row["Compare(<)"], row["If"], row["Else"]), ("1", "0", "1", "1"))
+            self.assertEqual((row["CallStmt"], row["Call"], row["Append"]), ("3", "3", "1"))   # CallStmt 内の Call は二重に数えない
+            self.assertEqual((row["print"], row["mul"], row["len"], row["add"]), ("3", "1", "1", "0"))
+            self.assertIn("← 未使用", out)
+            self.assertEqual(run("cov", a, a)[1].count("Compare(==)"), 1)
+
     def test_pass_at_1(self):
         body = "def f(x):\n    return add(x, 1)\nprint(f(1))\n"
         with tempfile.TemporaryDirectory() as d:

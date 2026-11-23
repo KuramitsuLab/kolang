@@ -226,6 +226,32 @@ def pass_command(args: argparse.Namespace) -> int:
     return 0 if n_pass == len(results) else 1
 
 
+def build_cov_parser() -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(
+        prog="kolang cov",
+        description="`.ko` が使っている構文（AST のノード。比較は演算子ごと）と標準ライブラリ関数の回数を、"
+                    "全ファイル合計で数える。0 回のものも表に出す。doctest の式は数えない。",
+    )
+    ap.add_argument("files", nargs="+", metavar="FILE", help="プログラム（examples/*.ko など）")
+    ap.add_argument("-f", "--from", dest="src", metavar="SYNTAX",
+                    help="シンタックス（既定: .ko ならファイルの 1 行目、それ以外は pylike）")
+    return ap
+
+
+def cov_command(args: argparse.Namespace) -> int:
+    from collections import Counter
+    from .cov import count_program, report
+    nodes: Counter = Counter()
+    stdlib: Counter = Counter()
+    for path in args.files:
+        syn, program, _ = load_program(path, args.src)
+        n, s = count_program(program, syn)
+        nodes.update(n)
+        stdlib.update(s)
+    sys.stdout.write(report(nodes, stdlib))
+    return 0
+
+
 def build_eval_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
         prog="kolang eval",
@@ -306,6 +332,8 @@ def main(argv: Optional[list] = None) -> int:
             return run_program(build_run_parser().parse_args(argv[1:]))
         if argv and argv[0] == "pass@1":
             return pass_command(build_pass_parser().parse_args(argv[1:]))
+        if argv and argv[0] == "cov":
+            return cov_command(build_cov_parser().parse_args(argv[1:]))
         if argv and argv[0] == "eval":
             return eval_command(build_eval_parser().parse_args(argv[1:]))
         if argv and argv[0] == "modelppl":
