@@ -90,7 +90,7 @@ doctest: 1 passed, 0 failed
 | `print` | 出力 |
 | `add` `sub` `mul` `div` `mod` `pow` | `+` `-` `*` `/` `%` `**`（`add` は文字列・リストの連結、`mul` は繰り返しにも使える） |
 | `int` `str` `float` `bool` | 型の変換 |
-| `abs` `chr` `input` `len` `list` `max` `min` `ord` `range` `repr` `reversed` `round` `sorted` `sum` | Python の同名の組み込み関数 |
+| `abs` `chr` `len` `list` `max` `min` `ord` `range` `repr` `reversed` `round` `sorted` `sum` | Python の同名の組み込み関数 |
 
 関数の名前は、シンタックスの JSON の `stdlib`（`{"print": "表示"}` の形）で変えられます。`ja.json` は漢字です（`表示` `足し算` `引き算` `掛け算` `割り算` `余り` `べき乗` `整数化` `文字列化` `小数化` `ブール化`）。
 

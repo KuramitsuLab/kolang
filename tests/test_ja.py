@@ -74,8 +74,8 @@ class SameAstAsPylike(unittest.TestCase):
     def test_grouping(self):
         from kolang.unparser import convert
         # 添字の括弧は index_begin / index_end が持つ。式の括弧は AST に残らない
-        self.assertEqual(convert("a = x[len(x)]\n", "pylike", "ja"), "aにxの((x)におけるlenの値)番目を代入\n")
-        self.check("aにxの((x)におけるlenの値)番目を代入", "a = x[len(x)]")
+        self.assertEqual(convert("a = x[len(x)]\n", "pylike", "ja"), "aにxの((x)における長さの値)番目を代入\n")
+        self.check("aにxの((x)におけるfの値)番目を代入", "a = x[f(x)]")
         self.check("aにxの(0)番目を代入", "a = x[0]")
         self.check("yに(z)を代入", "y = z")
 

@@ -15,7 +15,7 @@ PROG = (
     ">>> sub(10, x)\n"
     "7\n"
 )
-JA = "xに(1, 2)における足し算の値を代入\n((x, 4)における掛け算の値, (x, 2)における割り算の値, (x, 1)における引き算の値, (【1】)におけるlenの値)における表示の値\n>>> sub(10, x)\n7\n"
+JA = "xに(1, 2)における足し算の値を代入\n((x, 4)における掛け算の値, (x, 2)における割り算の値, (x, 1)における引き算の値, (【1】)における長さの値)における表示の値\n>>> sub(10, x)\n7\n"
 
 
 def output(source, syntax):
@@ -30,7 +30,9 @@ class Rename(unittest.TestCase):
         self.assertEqual(convert(JA, "ja", "pylike"), PROG)
 
     def test_unchanged_names_stay(self):
-        self.assertEqual(convert("x = len(y)\n", "pylike", "ja"), "xに(y)におけるlenの値を代入\n")
+        # 日本語名を持たない名前（自作の名前）は、そのまま
+        self.assertEqual(convert("x = foo(y)\n", "pylike", "ja"), "xに(y)におけるfooの値を代入\n")
+        self.assertEqual(convert("x = len(y)\n", "pylike", "ja"), "xに(y)における長さの値を代入\n")
 
     def test_the_converted_program_runs_the_same(self):
         self.assertEqual(output(PROG, "pylike"), output(convert(PROG, "pylike", "ja"), "ja"))

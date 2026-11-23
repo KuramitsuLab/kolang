@@ -292,7 +292,7 @@ kolang には演算子も `print` もありません。出力や四則演算は�
 | `add` `sub` `mul` `div` | 四則演算（`+` `-` `*` `/`。`add` は文字列・リストの連結にも使える） |
 | `int` `str` `float` `bool` | 型の変換（Python の `int()` `str()` `float()` `bool()`） |
 | `mod` `pow` | 剰余（`%`）、べき乗（`**`。2 引数） |
-| `abs` `chr` `input` `len` `list` `max` `min` `ord` `range` `repr` `reversed` `round` `sorted` `sum` | Python の同名の組み込み関数 |
+| `abs` `chr` `len` `list` `max` `min` `ord` `range` `repr` `reversed` `round` `sorted` `sum` | Python の同名の組み込み関数 |
 
 シンタックスの JSON のトップレベルに `stdlib` オブジェクトを置き、標準名をキーに、**そのシンタックスでの名前**を書くと、関数の名前を変えられます。書かなかったものは標準名のままです。
 

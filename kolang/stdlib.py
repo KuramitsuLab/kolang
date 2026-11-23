@@ -19,13 +19,11 @@ import sys
 from typing import Callable
 
 # Python の組み込み関数のうち、そのまま使うもの
-PYTHON_BUILTINS = ("abs", "bool", "chr", "float", "input", "int", "len", "list", "max", "min",
+PYTHON_BUILTINS = ("abs", "bool", "chr", "float", "int", "len", "list", "max", "min",
                    "ord", "range", "repr", "reversed", "round", "sorted", "str", "sum")
 
-# リストの長さを縮める操作。kolang の文は append（伸ばす）しか持たないので、kolang では書けない。
-# `xs.pop()` を `pop(xs)` と書く（Python のメソッドをそのまま呼ぶ）。
-# join / split / sort など、kolang で書けるものは lib/ に kolang で定義する（lib/NAME.ko）。
-METHODS = ("pop", "remove", "clear")
+# join / split / sort など、kolang で書けるものは標準ライブラリに足さず、lib/ に kolang で定義する（lib/NAME.ko）。
+# リストを縮める pop / remove / clear は持たない（新しいリストを作って書く）。
 
 
 def make_stdlib(stdout=None) -> dict[str, Callable]:
@@ -40,16 +38,7 @@ def make_stdlib(stdout=None) -> dict[str, Callable]:
     # （add は文字列・リストの連結にも使える、div は真の除算 /、mod は %、pow は **）
     table.update(add=operator.add, sub=operator.sub, mul=operator.mul, div=operator.truediv,
                  mod=operator.mod, pow=operator.pow)
-    for name in METHODS:
-        table[name] = _method(name)
     return table
-
-
-def _method(name: str) -> Callable:
-    def call(obj, *args):
-        return getattr(obj, name)(*args)
-    call.__name__ = name
-    return call
 
 
 NAMES: tuple = tuple(make_stdlib())

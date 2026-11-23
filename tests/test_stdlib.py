@@ -216,26 +216,13 @@ class Cli(unittest.TestCase):
             self.assertEqual((code, out.getvalue(), err.getvalue()), (0, "3\n", ""))
 
 
-class ShrinkingMethods(unittest.TestCase):
-    """リストの長さを縮める pop / remove / clear は、kolang では書けないので標準ライブラリにある。
-    ほかの join / split / sort / slice などは lib/ に kolang で定義している（tests/test_lib.py）。"""
+class LibFunctionsAreNotInStdlib(unittest.TestCase):
+    """join / split / sort / slice などは lib/ に kolang で定義している（tests/test_lib.py）。
+    リストを縮める pop / remove / clear は、使われないので標準ライブラリに持たない。"""
 
-    def test_pop_remove_clear(self):
-        src = ('xs = [3, 1, 2]\nprint(pop(xs), xs)\nremove(xs, 3)\nprint(xs)\nprint(pop(xs, 0))\nclear(xs)\nprint(xs)\n')
-        self.assertEqual(output(src), "2 [3, 1]\n[1]\n1\n[]\n")
-
-    def test_errors_are_pythons(self):
-        with self.assertRaises(IndexError) as cm:
-            run("x = pop([])\n")
-        self.assertEqual(str(cm.exception), "pop from empty list")
-
-    def test_user_definition_shadows(self):
-        src = "def pop(x):\n    return add(x, 1)\nprint(pop(1))\n"
-        self.assertEqual(output(src), "2\n")
-
-    def test_lib_functions_are_not_in_stdlib(self):
+    def test_not_in_stdlib(self):
         from kolang.stdlib import NAMES
-        for name in ("join", "split", "slice", "sort", "any", "all", "lower"):
+        for name in ("join", "split", "slice", "sort", "any", "all", "lower", "pop", "remove", "clear"):
             self.assertNotIn(name, NAMES)
 
 
