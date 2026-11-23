@@ -41,6 +41,7 @@ kolang conv prog.ko -t ja             .ko なら -f は不要
 kolang conv prog.py -f pylike         構文チェックだけ（-t を省略）
 kolang run prog.py [-f pylike]     実行する（ファイルなしなら標準入力）
 kolang run prog.ko                 .ko ファイルを実行する（シンタックスは 1 行目で指定）
+kolang eval SYNTAX [-t ID...] [-q]  評価問題（kolangeval.jsonl）の正解を SYNTAX に変換し、doctest で動作を確かめる
 kolang modelppl [-s SYNTAX...]     シンタックスと LLM の親和度を測り、modelppl.csv に書く
 ```
 
@@ -48,6 +49,7 @@ kolang modelppl [-s SYNTAX...]     シンタックスと LLM の親和度を測�
 - 変換では、標準ライブラリ関数の名前も書き換わります。止めるには `--no-rename` です。
 - `*.emit` に候補の配列を書くと、`--random-emit SEED` のときだけ候補から選びます（省略すると常に最初）。
 - `.ko` ファイルは、1 行目に ` ```ja:jslike(assign) ` のようにシンタックスを書き、閉じの ` ``` ` までをコードとして読みます（`-f` は不要）。`kolang run x.ko` は、同じフォルダに `x.doctest`（フェンスなし、同じシンタックスのコードに、`>>> f(x)` と答えを並べたもの）があれば、続けてテストします。本体で定義した名前（関数・変数）が見えます。`-o out.ko` で変換結果を `.ko` 形式で書けます。
+- `kolang eval SYNTAX` は、`kolang/kolangeval.jsonl`（HumanEval から作った 164 問。`prompt` `doctest` `pylike`（正解コード）など）の `pylike` を SYNTAX に変換して読み直し、`doctest` で動作を確かめて pass@1 を出します。`-i FILE` で別の jsonl、`-t 0 1` で問題を絞り、`-q` で不合格だけ表示します。`pylike` のない問題は `SKIP` とし、分母に入れません。終了コードは 0 が全合格、1 が不合格あり。Python からは `kolang.kolangeval` の `evaluate(syntax, problems, solver)` で、`solver(problem, syntax) -> code` を差し替えると、変換の代わりにモデルが生成したコードを採点できます。
 - `kolang modelppl` は、`modelppl.csv` の第一カラム `syntax` のシンタックスについて、`NLL, tok, char, PPL, bpc` を計算して埋めます（ファイルがなければ、4 つの組み込みシンタックスで新規作成）。既定のモデルは `Qwen/Qwen2.5-Coder-1.5B-Instruct`（`-m` で変更）。詳しくは [modelppl.md](modelppl.md)。
 - `kolang run` の終了コードは、0 が成功、1 が実行時エラーか doctest の不一致、2 が使い方の誤りです。
 
@@ -237,6 +239,7 @@ kolang conv -f pylike -t 'ja:jslike(assign,block,funcapp,stdlib)'
 | `kolang/pyeval.py` | 評価器（Visitor）。Python 互換 |
 | `kolang/structure.py` / `snippet.py` | カスケードの衝突検査（構造検査 / AST スニペットの往復） |
 | `kolang/kofile.py` | `.ko` ファイル（1 行目にシンタックス指定）の読み書き |
+| `kolang/kolangeval.py` | 評価問題（隣の `kolangeval.jsonl`）の採点（`kolang eval`）。Solver を差し替えるとモデルの生成も採点できる |
 | `kolang/modelppl.py` | LLM の NLL / PPL でシンタックスの親和度を測る（`kolang modelppl`） |
 | `kolang/cli.py` / `examples.py` | `kolang` コマンド / `--show` の例（`show_example` は `snippet.show_snippets`、`show_ebnf` は `ebnf.py`） |
 

@@ -234,7 +234,7 @@ def build_eval_parser() -> argparse.ArgumentParser:
         epilog="終了コード: 0 すべて合格 / 1 不合格がある / 2 使い方の誤り。",
     )
     ap.add_argument("syntax", metavar="SYNTAX", help="名前、JSON のパス、カスケード（ja:jslike(assign,block)）")
-    ap.add_argument("-i", "--input", metavar="FILE", help="問題の jsonl（既定: kolangeval.jsonl）")
+    ap.add_argument("-i", "--input", metavar="FILE", help="問題の jsonl（既定: kolang/kolangeval.jsonl）")
     ap.add_argument("-t", "--task", metavar="ID", nargs="+",
                     help="この問題だけ評価する（HumanEval/0 または 0）")
     ap.add_argument("-q", "--quiet", action="store_true", help="不合格の問題だけ表示する")
@@ -245,22 +245,23 @@ def eval_command(args: argparse.Namespace) -> int:
     from .kolangeval import DEFAULT_FILE, evaluate, load_problems
     syn = load(args.syntax)
     problems = load_problems(args.input or DEFAULT_FILE)
-    total = len(problems)
     if args.task:
         wanted = {t if "/" in t else f"HumanEval/{t}" for t in args.task}
         problems = [p for p in problems if p["task_id"] in wanted]
         if not problems:
             raise CliError(f"問題が見つかりません: {' '.join(args.task)}")
-        total = len(problems)
     results = evaluate(syn, problems)
     for r in results:
         if r.ok and args.quiet:
             continue
-        print(f"{'PASS' if r.ok else 'FAIL'}  {r.task_id}  doctest {r.passed}/{r.total}"
+        print(f"{'SKIP' if r.skipped else 'PASS' if r.ok else 'FAIL'}  {r.task_id}  doctest {r.passed}/{r.total}"
               + (f"  {r.reason}" if r.reason else ""))
-    n_pass = sum(r.ok for r in results)
-    print(f"pass@1 = {n_pass}/{total} = {n_pass / total:.1%}  ({syn.name})")
-    return 0 if n_pass == total else 1
+    scored = [r for r in results if not r.skipped]          # 正解がない問題は分母に入れない
+    n_pass = sum(r.ok for r in scored)
+    skipped = len(results) - len(scored)
+    print(f"pass@1 = {n_pass}/{len(scored)} = {n_pass / len(scored):.1%}  ({syn.name})"
+          + (f"  スキップ {skipped}" if skipped else ""))
+    return 0 if n_pass == len(scored) else 1
 
 
 def build_show_example_parser() -> argparse.ArgumentParser:

@@ -18,7 +18,7 @@ from .parser import make_parser, parse
 from .syntax import Syntax
 from .unparser import convert, defined_names
 
-DEFAULT_FILE = Path(__file__).resolve().parent.parent / "kolangeval.jsonl"
+DEFAULT_FILE = Path(__file__).resolve().parent / "kolangeval.jsonl"
 
 # 問題（jsonl の 1 行）と、評価するシンタックスから、そのシンタックスのコードを返す。
 Solver = Callable[[dict, Syntax], str]
@@ -31,6 +31,7 @@ class Result:
     passed: int = 0
     total: int = 0
     reason: str = ""
+    skipped: bool = False        # 正解（pylike）がない問題。採点せず、分母にも入れない
 
 
 def load_problems(path=DEFAULT_FILE) -> list:
@@ -40,8 +41,6 @@ def load_problems(path=DEFAULT_FILE) -> list:
 
 def reference_solver(problem: dict, syntax: Syntax) -> str:
     """正解の pylike コードを、syntax に変換する（モデルを使わない既定の Solver）。"""
-    if not problem.get("pylike"):
-        raise ValueError("正解の pylike コードがない")
     return convert(problem["pylike"], "pylike", syntax)
 
 
@@ -49,6 +48,8 @@ def check(problem: dict, syntax: Syntax, solver: Solver = reference_solver) -> R
     """1 問を、コードの用意 → 読み込み → 実行 → doctest の順に確かめる。"""
     from .pyeval import PyEval
     task = problem["task_id"]
+    if not problem.get("pylike") and solver is reference_solver:
+        return Result(task, False, reason="正解の pylike コードがない", skipped=True)
     try:
         code = solver(problem, syntax)
         program = parse(code, syntax)
