@@ -293,7 +293,7 @@ f(1);
 
 図~\ref{fig:cascade}に、最大公約数を求める同じプログラム（同じAST）を、合成の度合いを変えて出力した例を示す。
 完全な日本語版（\verb|ja|）から、関数呼び出しだけをPython風にした版、
-日本語の予約語にPython風の代入や標準関数名を混ぜた版、
+日本語の予約語に、JavaScript風のブロック（\verb|{ }|と\verb|;|）とPython風の関数呼び出し・代入・標準関数名を混ぜた版（\verb|ja:jslike(block):pylike(funcapp,assign,stdlib)|）、
 完全なPython風（\verb|pylike|）まで、構文を連続的に動かせる。
 これは要求R2（ベース言語の連続的な変更）を満たす。
 いずれも\verb|kolang conv|で変換でき、変換のたびに読み直してASTを比較するので、意味が変わっていないことを確かめられる。
@@ -339,19 +339,19 @@ f(1);
 \medskip
 \begin{minipage}[t]{0.48\textwidth}
 \begin{verbatim}
-[日本語と Python 風の混成]
-関数 gcd(a, b)とは『
-    add(a, b)回くり返す『
-        もしbが0と等しいなら『
-            抜ける
-        』
-        t = mod(a, b)
-        a = b
-        b = t
-    』
-    aを返す
-』
-print(gcd(48, 18))
+[ja:jslike(block):pylike(funcapp,assign,stdlib)]
+関数 gcd(a, b)とは{
+    add(a, b)回くり返す{
+        もしbが0と等しいなら{
+            抜ける;
+        }
+        t = mod(a, b);
+        a = b;
+        b = t;
+    }
+    aを返す;
+}
+print(gcd(48, 18));
 \end{verbatim}
 \end{minipage}
 \hfill
@@ -520,36 +520,45 @@ pylike、ja、lisplike、jslikeの4つのシンタックスのすべてで、163
 
 \subsection{文脈内学習実験の設定}
 
-問題は、\verb|kolangeval|から、難易度の低い問題を選んだ。
-難易度1（29問）と難易度4（33問）を用いた。
+問題は、\verb|kolangeval|から選んだ。
+難易度1〜5の全164問を、3つのシンタックスのすべてで用いた。
 モデルは、Claude Haiku 5.5である。
+1問につき1回だけ生成させ（$n=1$）、そのpass@1を求める。
+サンプリングの温度などはAPIの既定のままで、貪欲復号ではない。
 システムプロンプトには、kolangの言語仕様は与えず、お手本のプログラム4本（\verb|syntax_tour|、\verb|stdlib_tour|、\verb|fizzbuzz|、\verb|list_ops|、合計288行）を、対象のシンタックスに変換して与えた。
 お手本は、全構文と標準ライブラリの関数を一通り使うように選んである（\verb|kolang cov|で網羅を確認した）。
 ユーザプロンプトには問題文を与え、関数の宣言部（\verb|entry_point|のヘッダ）は固定して、続きを生成させた。
 生成物は、シンタックスで読み直し、実行してdoctestがすべて通ったものを正解とした（pass@1）。
-比較したシンタックスは、Python風（pylike）と日本語版（ja）である。
+比較したシンタックスは、Python風（pylike）、日本語版（ja）、日本語版の関数呼び出しだけをPython風に差し替えた\verb|ja:pylike(funcapp)|、およびブロックをJavaScript風、関数呼び出し・代入・標準ライブラリの名前をPython風に差し替えた\verb|ja:jslike(block):pylike(funcapp,assign,stdlib)|である。
 
 \subsection{文脈内学習実験の結果}
 
 結果を表~\ref{tab:eval}に示す。
 
-\begin{table}[t]
+\begin{table*}[t]
 \centering
-\caption{kolang eval の結果（Claude Haiku 5.5, pass@1）}
+\caption{kolang eval の結果（Claude Haiku 5.5, pass@1）。d1〜d5は難易度（問題数は29、34、37、33、31）、全体は164問}
 \label{tab:eval}
-\begin{tabular}{lrr}
+\small
+\begin{tabular}{lrrrrrr}
 \hline
-シンタックス & 難易度1（29問） & 難易度4（33問） \\
+シンタックス & d1 & d2 & d3 & d4 & d5 & 全体 \\
 \hline
-pylike & 29 (100\%) & 27 (82\%) \\
-ja     & 25 (86\%)  & 28 (85\%) \\
+\hline
+pylike & 29 & 29 & 29 & 27 & 23 & 137 (84\%) \\
+ja     & 25 & 29 & 34 & 28 & 26 & 142 (87\%) \\
+ja:pylike(funcapp) & 28 & 31 & 35 & 30 & 29 & 153 (93\%) \\
+\begin{tabular}[t]{@{}l@{}}ja:jslike(block):\\ pylike(funcapp,\\ assign,stdlib)\end{tabular} & 28 & 30 & 35 & 29 & 26 & 148 (90\%) \\
 \hline
 \end{tabular}
-\end{table}
+\end{table*}
 
 言語仕様を与えず、お手本だけで、学習していないシンタックスのプログラムが書けた。
 難易度1では、pylikeは全問、jaも25問が通った。
 難易度4でも、どちらも8割以上が通った。
+難易度1〜5の全164問では、pylikeが137問（84\%）、jaが142問（87\%）、合成した\verb|ja:pylike(funcapp)|が153問（93\%）、ブロックまでJavaScript風にした\verb|ja:jslike(block):pylike(funcapp,assign,stdlib)|が148問（90\%）であった。
+合成した\verb|ja:pylike(funcapp)|は、難易度によらず9割前後で、pylikeは難易度が上がると下がった（難易度5で23/31）。
+全164問には、正解のコードを持たない問題（HumanEval/162）も含まれ、これは解けない。
 以上から、構文の獲得は文脈内の少量の例で成立しており、本処理系で、獲得の度合いを測る実験ができることが確かめられた。
 
 失敗の原因を調べると、ほとんどは構文の誤りであった。
@@ -561,13 +570,14 @@ ja     & 25 (86\%)  & 28 (85\%) \\
     LLMが、Pythonの習慣を持ち込んだ例である。
   \item 構文以外では、標準ライブラリにない関数（\verb|md5|）の使用があった。
 \end{itemize}
+\verb|ja:pylike(funcapp)|の失敗11問のうち、読み込みの構文エラーは5問、未定義の名前は2問（\verb|md5_hex|を含む）、doctestの不一致は4問であった。
 
 これは、LLMの既存の知識（Python）が、新しい構文の獲得を助けるだけでなく、規則の違いで誤りも生むことを示す。
 どちらも、お手本に該当する例を足せば減らせると考えられる。
 
 \subsection{予備実験の限界}
 
-本実験は予備的であり、問題数が少なく、モデルは1つで、試行は1回のみである。
+本実験は予備的であり、モデルは1つで、試行は1問1回（$n=1$）のみである。
 お手本の数と、成績の関係や、合成したシンタックス（図~\ref{fig:cascade}）の比較も、まだ行っていない。
 また、Qwen2.5-Coder-1.5Bのような小型モデルでは、同じ設定では、ほとんど書けなかった。
 

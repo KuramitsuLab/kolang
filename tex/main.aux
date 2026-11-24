@@ -16,36 +16,45 @@
 \newlabel{ipsj@firstpage}{{}{1}}
 \@writefile{toc}{\contentsline {section}{\numberline {1}\hskip 1zw{はじめに}}{1}{}\protected@file@percent }
 \citation{Kuramitsu2026Nanako}
+\newlabel{fig:yui-sample}{{1}{2}}
 \@writefile{toc}{\contentsline {section}{\numberline {2}\hskip 1zw{どの構文を可変とするか}}{2}{}\protected@file@percent }
 \newlabel{sec:requirements}{{2}{2}}
-\newlabel{fig:yui-sample}{{1}{2}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.1}{Yuiから見えた課題}}{2}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}{要求の整理}}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}{要求の整理}}{3}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.3}{ベース言語と配分（R2）}}{3}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.4}{語彙と語順（R3）}}{3}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.5}{識別子（R4）}}{3}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.6}{関数適用の記法（R5）}}{3}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.7}{要求と設計の対応}}{3}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {3}\hskip 1zw{kolangの設計}}{3}{}\protected@file@percent }
-\newlabel{sec:design}{{3}{3}}
-\citation{Chen2021HumanEval}
 \citation{Cassano2023MultiPLE}
 \newlabel{tab:req}{{1}{4}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}\hskip 1zw{kolangの設計}}{4}{}\protected@file@percent }
+\newlabel{sec:design}{{3}{4}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.1}{骨格の固定と区切りの可変}}{4}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}{語順の可変}}{4}{}\protected@file@percent }
 \newlabel{fig:syntaxes}{{2}{4}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}{語順の可変}}{4}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.3}{Pythonを意味論とする}}{4}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.4}{字句の共通化とレイアウト}}{5}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}{シンタックスの合成と衝突検査}}{5}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}{シンタックスの合成と連続的な変更}}{5}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {4}\hskip 1zw{kolangの実装}}{5}{}\protected@file@percent }
 \newlabel{sec:impl}{{4}{5}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.1}{パーサ}}{5}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}{出力器と変換}}{5}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}{評価器}}{5}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}{衝突検査}}{5}{}\protected@file@percent }
-\citation{Chen2021HumanEval}
+\newlabel{fig:cascade}{{3}{6}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}{出力器と変換}}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}{評価器}}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}{衝突検査}}{6}{}\protected@file@percent }
 \citation{Hui2024Qwen25Coder}
 \citation{Hindle2012Naturalness}
+\citation{Chen2021HumanEval}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}{コマンドとテスト}}{7}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}{パーサの限界：後置記法}}{7}{}\protected@file@percent }
+\newlabel{tab:ppl}{{2}{7}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}\hskip 1zw{予備実験}}{7}{}\protected@file@percent }
+\newlabel{sec:eval}{{5}{7}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}{LLMとの親和度の測定}}{7}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}{文脈内学習実験：HumanEvalに基づく評価問題集}}{7}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}{文脈内学習実験の設定}}{8}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}{文脈内学習実験の結果}}{8}{}\protected@file@percent }
 \citation{Sun2024SimPy}
 \citation{Sun2025TokenSugar}
 \citation{Pan2025Format}
@@ -59,13 +68,11 @@
 \citation{Giagnorio2026NoResource}
 \citation{Kocetkov2022Stack}
 \citation{Kaplan2020Scaling}
-\newlabel{tab:ppl}{{2}{6}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}{コマンドとテスト}}{6}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}{LLMとの親和度の予備測定}}{6}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {5}\hskip 1zw{関連研究}}{6}{}\protected@file@percent }
-\newlabel{sec:related}{{5}{6}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}{LLMに適したプログラミング言語の文法}}{6}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}{低リソース言語と新言語のコード生成}}{6}{}\protected@file@percent }
+\newlabel{tab:eval}{{3}{9}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}{予備実験の限界}}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}\hskip 1zw{関連研究}}{9}{}\protected@file@percent }
+\newlabel{sec:related}{{6}{9}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}{LLMに適したプログラミング言語の文法}}{9}{}\protected@file@percent }
 \citation{Tobin2011Libraries}
 \citation{Iu2011Babylscript}
 \citation{Kanemune2001Dolittle}
@@ -83,13 +90,14 @@
 \bibcite{Giagnorio2025NoSilver}{8}
 \bibcite{Giagnorio2026NoResource}{9}
 \bibcite{Hindle2012Naturalness}{10}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}{低リソース言語と新言語のコード生成}}{10}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}{構文可変・多言語の言語処理系}}{10}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7}\hskip 1zw{まとめ}}{10}{}\protected@file@percent }
 \bibcite{Hui2024Qwen25Coder}{11}
 \bibcite{Hutton1998Monadic}{12}
 \bibcite{Iu2011Babylscript}{13}
 \bibcite{Joel2024Survey}{14}
 \bibcite{Kajiura2022APSEC}{15}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}{構文可変・多言語の言語処理系}}{7}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {6}\hskip 1zw{まとめ}}{7}{}\protected@file@percent }
 \bibcite{Kaplan2020Scaling}{16}
 \bibcite{Kocetkov2022Stack}{17}
 \bibcite{Kumar2026PyLang}{18}
@@ -109,12 +117,12 @@
 \bibcite{Nakano2026ProSym}{32}
 \bibcite{Nishigata2026NLP}{33}
 \bibcite{Obara2024xSIG}{34}
-\@writefile{toc}{\contentsline {section}{\numberline {A.1}\hskip 1zw{kolangの抽象構文}}{8}{}\protected@file@percent }
-\newlabel{app:syntax}{{A.1}{8}}
-\newlabel{tab:kolang-bnf}{{{A$\cdot $1}}{9}}
-\@writefile{toc}{\contentsline {section}{\numberline {A.2}\hskip 1zw{標準ライブラリ}}{9}{}\protected@file@percent }
-\newlabel{app:stdlib}{{A.2}{9}}
-\newlabel{tab:kolang-stdlib}{{{A$\cdot $2}}{10}}
-\newlabel{tab:kolang-lib}{{{A$\cdot $3}}{10}}
-\newlabel{ipsj@lastpage}{{}{10}}
-\gdef \@abspage@last{10}
+\@writefile{toc}{\contentsline {section}{\numberline {A.1}\hskip 1zw{kolangの抽象構文}}{12}{}\protected@file@percent }
+\newlabel{app:syntax}{{A.1}{12}}
+\@writefile{toc}{\contentsline {section}{\numberline {A.2}\hskip 1zw{標準ライブラリ}}{12}{}\protected@file@percent }
+\newlabel{app:stdlib}{{A.2}{12}}
+\newlabel{tab:kolang-bnf}{{{A$\cdot $1}}{13}}
+\newlabel{tab:kolang-stdlib}{{{A$\cdot $2}}{14}}
+\newlabel{tab:kolang-lib}{{{A$\cdot $3}}{14}}
+\newlabel{ipsj@lastpage}{{}{14}}
+\gdef \@abspage@last{14}

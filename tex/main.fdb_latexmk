@@ -1,18 +1,19 @@
 # Fdb version 4
-["bibtex main"] 1795401036 "main.aux" "main.bbl" "main" 1795401037 0
+["bibtex main"] 1795531974 "main.aux" "main.bbl" "main" 1795532108 0
   "./ipsjsort.bst" 1795134700 24572 c46c9614660b8637c60b25daba6b51d6 ""
   "./myrefs.bib" 1795400842 11316 dbe7b71d727b8a007083b7a319a81609 ""
-  "main.aux" 1795401037 6234 baa37b55a9a656e593b74651ef7c9eee "latex"
+  "main.aux" 1795532107 7061 d2410edb2e01c460187ffc1d671a3dce "latex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["dvipdf"] 1795401037 "main.dvi" "main.pdf" "main" 1795401037 0
-  "main.dvi" 1795401037 63584 785bdced1e099e68fe5a5d4dc7e2de8d "latex"
+["dvipdf"] 1795532107 "main.dvi" "main.pdf" "main" 1795532108 0
+  "main.dvi" 1795532107 84036 76c4c480f40cf57bb03ca607fb26f0cb "latex"
   (generated)
   "main.pdf"
   (rewritten before read)
-["latex"] 1795401036 "main.tex" "main.dvi" "main" 1795401037 0
+["latex"] 1795532107 "/Users/kimio/Git/kolang/tex/main.tex" "main.dvi" "main" 1795532108 0
+  "/Users/kimio/Git/kolang/tex/main.tex" 1795532107 48910 646bead4f93cab03a2057a27845bf6f4 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/tfm/ptex-fonts/jis/jis.tfm" 1463434352 468 53f854284f6afa6c36aaa2d1090ecc12 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/tfm/ptex-fonts/jis/jisg.tfm" 1463434352 468 53f854284f6afa6c36aaa2d1090ecc12 ""
@@ -75,9 +76,9 @@
   "ipsj.cls" 1795134700 124312 91e3ac41836e0231003a8dec049b353b ""
   "ipsjprosym.cls" 1795134700 1145 a98e64c2f4eef2cd695c5762d8600212 ""
   "ipsjtech.sty" 1795134700 6218 e752553af768fcae894e19205d3a7d42 ""
-  "main.aux" 1795401037 6234 baa37b55a9a656e593b74651ef7c9eee "latex"
-  "main.bbl" 1795401036 7884 baa17b48b35cbf6f10c95ef4f8c8a802 "bibtex main"
-  "main.tex" 1795401035 35612 d5c835cef97dddec8236d4b5bef5d5c6 ""
+  "main.aux" 1795532107 7061 d2410edb2e01c460187ffc1d671a3dce "latex"
+  "main.bbl" 1795531974 7758 9819c1716aca8e170f17a020ad29e94c "bibtex main"
+  "main.tex" 1795532107 48910 646bead4f93cab03a2057a27845bf6f4 ""
   (generated)
   "main.aux"
   "main.dvi"
