@@ -4,7 +4,7 @@ kolang（こ言語）の作業メモ。続きを始めるときは、まずこ�
 
 ## これは何か
 
-シンタックス可変言語。文法の骨格は固定で、区切りの記号（`block_begin` `if_then` などのトークン名）を、JSON の正規表現で差し替える。Python 風・日本語風・Lisp 風・JavaScript 風が同じ AST になる。パーサ、出力器（シンタックス間の変換）、コメントの保持、`kolang` コマンドまで実装済み。評価器は `pyeval.py`（Python 互換、Visitor）がある。`kolang run FILE [-f SYNTAX]` で実行、`kolang conv FILE [-f SYNTAX] -t SYNTAX` で変換できる。`kolang show_ebnf SYNTAX` は、`kolang.md` の規則をそのシンタックスの記号で書いた BNF を出す（`ebnf.show_ebnf`）。`kolang show_example SYNTAX [NAME...]` は、`snippet.SNIPPETS` をそのシンタックスで書いて表示する（`snippet.show_snippets`。カスケードの衝突の原因を目で見る用。`--list` で名前の一覧）`kolang eval SYNTAX [-i FILE] [-t ID...] [-q]` は、`kolang/kolangeval.jsonl` の `pylike` を SYNTAX に変換して読み直し、`doctest` で動作を確かめる（`kolangeval.py` の `check` / `evaluate`。`pylike` のない問題は SKIP で分母に入れない。コードを作る部分は `Solver(problem, syntax) -> code` で差し替えられる。既定は `reference_solver`。将来はモデルに `prompt` を渡す Solver を足す）。`kolang cov FILE.ko... [-f SYNTAX]` は、構文（AST のノードの種類。比較は演算子ごと）と標準ライブラリ関数の使用回数を全ファイル合計で数え、0 回も表に出す（`cov.py` の `count_program` / `report`。doctest の式と自作の同名関数は数えない。`examples/` のカバー確認用）。`kolang pass@1 FILE.ko... [--total N]` は、`.ko` と同名の `.doctest` を実行して pass@1 を出す（`cli.py` の `check_problem` / `pass_command`。合格 = 実行がエラーなく終わり、doctest が 1 件以上あって全件一致。`--total 164` で分母を HumanEval の総数にする。終了コード 0 全合格 / 1 不合格あり）。HumanEval の記録は `humaneval.md`（`humaneval.jsonl`、移植 `humaneval/NNN.{ko,doctest}`、prompt から kolang で書いた `humaneval_gen/NNN.{ko,doctest}`。`kolang pass@1 humaneval/*.ko humaneval_gen/*.ko --total 164` で 162/164）（`cli.py` の `run_program` → `pyeval.execute`。終了コード 0 成功 / 1 実行時エラーか doctest の不一致）。
+シンタックス可変言語。文法の骨格は固定で、区切りの記号（`block_begin` `if_then` などのトークン名）を、JSON の正規表現で差し替える。Python 風・日本語風・Lisp 風・JavaScript 風が同じ AST になる。パーサ、出力器（シンタックス間の変換）、コメントの保持、`kolang` コマンドまで実装済み。評価器は `pyeval.py`（Python 互換、Visitor）がある。`kolang run FILE [-f SYNTAX]` で実行、`kolang conv FILE [-f SYNTAX] -t SYNTAX` で変換できる。`kolang show_ebnf SYNTAX` は、`kolang.md` の規則をそのシンタックスの記号で書いた BNF を出す（`ebnf.show_ebnf`）。`kolang show_example SYNTAX [NAME...]` は、`snippet.SNIPPETS` をそのシンタックスで書いて表示する（`snippet.show_snippets`。カスケードの衝突の原因を目で見る用。`--list` で名前の一覧）`kolang eval SYNTAX [-i FILE] [-t ID...] [-d N...] [-q]`（`-d` は difficulty で絞る）は、`kolang/kolangeval.jsonl` の `pylike` を SYNTAX に変換して読み直し、`doctest` で動作を確かめる（`kolangeval.py` の `check` / `evaluate`。`pylike` のない問題は SKIP で分母に入れない。コードを作る部分は `Solver(problem, syntax) -> code` で差し替えられる。既定は `reference_solver`。`--model` でモデルに `prompt` を渡す Solver を使う）。`kolang cov FILE.ko... [-f SYNTAX]` は、構文（AST のノードの種類。比較は演算子ごと）と標準ライブラリ関数の使用回数を全ファイル合計で数え、0 回も表に出す（`cov.py` の `count_program` / `report`。doctest の式と自作の同名関数は数えない。`examples/` のカバー確認用）。`kolang pass@1 FILE.ko... [--total N]` は、`.ko` と同名の `.doctest` を実行して pass@1 を出す（`cli.py` の `check_problem` / `pass_command`。合格 = 実行がエラーなく終わり、doctest が 1 件以上あって全件一致。`--total 164` で分母を HumanEval の総数にする。終了コード 0 全合格 / 1 不合格あり）。HumanEval の記録は `humaneval.md`（`humaneval.jsonl`、移植 `humaneval/NNN.{ko,doctest}`、prompt から kolang で書いた `humaneval_gen/NNN.{ko,doctest}`。`kolang pass@1 humaneval/*.ko humaneval_gen/*.ko --total 164` で 162/164）（`cli.py` の `run_program` → `pyeval.execute`。終了コード 0 成功 / 1 実行時エラーか doctest の不一致）。
 
 - 文法: `kolang.md`（トークン名と規則の定義。仕様の正）
 - 使い方: `README.md`（コマンド・実行・Python API・シンタックスの作り方・カスケードと衝突検査・仕組み・制約）
@@ -15,10 +15,12 @@ kolang（こ言語）の作業メモ。続きを始めるときは、まずこ�
 ## 作業ルール
 
 - 応答とドキュメントは**日本語**。コード中のコメントも日本語。
-- テスト: `python3 -m unittest discover -s tests -t .`（現在 282 件、すべて通る。2 件はスキップ）。変更したら必ず実行する。
+- テスト: `python3 -m unittest discover -s tests -t .`（現在 290 件、すべて通る。2 件はスキップ）。変更したら必ず実行する。
 - git リポジトリ。リモートは https://github.com/KuramitsuLab/kolang（public、ブランチ `main`）。HumanEval 系（`humaneval/` `humaneval_gen/` `humaneval.jsonl` `humaneval.md` `pyhumaneval*`）は、いったん公開しないので `.gitignore` に入れてある（手元には残す。履歴からも消した）。コミットや push はユーザーに頼まれたときだけ行う（公開されるので、push の前に確認する）。
 - `kolang` コマンドは、ユーザーの環境にはインストールしていない（`pip install -e .` は未実行）。動作確認は、スクラッチパッドの venv か `python3 -m kolang` で行った。
 - `kolang modelppl` は torch / transformers と HF モデル（既定 `Qwen/Qwen2.5-Coder-1.5B-Instruct`、キャッシュ済み）が要る。実測は約 1 分。`modelppl.csv` はプロジェクト直下に置いてあり、実行すると上書きされる。テストの `test_modelppl` は偽の採点関数なのでモデル不要（表が標準出力に出る）。
+- これは**研究用**。完璧を求めない（粗くてもよいので先に結果を出す）。
+- `kolang eval --model` の結果は `results/`（`.gitignore` 済み）に出る。モデルは HF（torch / transformers）か、`claude-` で始まれば Anthropic API（`ANTHROPIC_API_KEY`。API は課金されるので、回す前に一言伝える）。
 - 一時ファイルはスクラッチパッドに置く。プロジェクト内に `*.egg-info` を残さない。
 
 ## ユーザーの要望（これまでに出たもの）
@@ -46,7 +48,7 @@ kolang/
   structure.py    構造検査 problems(syntax): トークン定義だけを見て、読み書きできない組み合わせを文章で返す
   snippet.py      カスケード検査用の AST スニペット（SNIPPETS。40 個）と failures(syntax)、表示用の show_snippets(syntax, names)
   cov.py          `kolang cov`。AST のノード（Compare は演算子ごと）と標準ライブラリ関数の使用回数
-  kolangeval.py   `kolang eval`。隣の kolangeval.jsonl（問題 164 問。`__file__` から読む）の pylike の正解を変換 → 読み直し → doctest。pylike のない問題はスキップして分母に入れない。Solver を差し替えるとモデルの生成も採点できる
+  kolangeval.py   `kolang eval`。隣の kolangeval.jsonl（問題 164 問。`__file__` から読む）の pylike の正解を変換 → 読み直し → doctest。pylike のない問題はスキップして分母に入れない。Solver を差し替えるとモデルの生成も採点できる。`--model NAME [--context FILE] [-o OUT.jsonl]` は `make_claude_generator`（`--model claude-…`。Anthropic API。新しいモデルは prefill が 400 なので書き出しはユーザーメッセージの指示。`.` は `-` にする。トークン数は usage、キャッシュ分を含む）/ `make_hf_generator`（HF のチャットテンプレート、context = system、prompt = user、貪欲。返答の書き出し = ``` と `entry_header`（正解の entry_point の関数定義の、本体より前）を先に置いて続きを生成）で生の出力を得る → `extract_code` → `evaluate_recorded` が 1 問 1 行の jsonl（出力先の既定は `default_output_name` = `results/kolangeval_<syntax>_<model>[_d<N>].jsonl`（`-d` の指定は `_d1` / `_d1_3`）、`-o -` で標準出力）（task_id / model / syntax / prompt / output / input_tokens / output_tokens（`Generation`: str にトークン数を添える。ただの str なら null）/ code / doctest{ok,passed,total} / error_message）を出す。context は `build_context`（FILE そのまま、なければ `kolang/examples/*.ko` を SYNTAX に変換）。examples は package-data に入れてある
   modelppl.py     シンタックスと LLM の親和度。SNIPPETS を各シンタックスで出力 → HF モデルで NLL / PPL / bpc。`kolang modelppl`（`python3 -m kolang.modelppl` も可）。`modelppl.csv` の第一カラム syntax に NLL/tok/char/PPL/bpc を埋める（なければ作る）。説明は `modelppl.md`。torch・transformers は遅延 import。テストは偽の採点関数
   kofile.py       .ko ファイル（1 行目 ```シンタックス 〜 閉じの ``` までがコード）。split_ko / join_ko
   ebnf.py         show_ebnf(syntax): kolang.md の規則を、そのシンタックスの記号で書いた BNF（`kolang show_ebnf`）
@@ -95,6 +97,12 @@ tests/            test_lib / test_modelppl / test_kofile / test_pylike / test_ja
 - 動作は Python 3.10 以上が前提（`kw_only` の dataclass）。3.11 で確認。
 
 - カスケードの既知の衝突（`KOLANG_MATRIX=1` で確認。744 通り中 52 通り、すべて lisplike が絡み、すべて構造検査が見つける）: lisplike は block が空で、各形が `)` で閉じる。indent の `block` や、`if_end` などが空のシンタックスと混ぜると、閉じがなくなって次の文が本体に入る（AST が変わる）か、出力できない。`;` はコメント（lisplike）と `block_sep`（jslike）が重なる。どれも記号の衝突なので直せず、警告で知らせる。直した分（`CASCADES` に入っている）: `continuation` を `else_begin` から導く（JSON の `continuation` は上書き用）、行頭の部品の先頭の空白を落とす、none の空白に改行を足す（indent 以外がベースでも）、後置の添字 `[` は変数の直後だけ（空白があれば別の式）。
+
+## 測定の記録（`kolang eval --model`。prompt + examples 変換 + entry_point のヘッダ固定）
+
+- `claude-haiku-5.5`（pass@1。結果は `results/`）: d=1 は pylike 29/29・ja 25/29、d=4（33 問）は pylike 27/33・ja 28/33。Qwen2.5-Coder-1.5B は d=1 で pylike 2/29・ja 2/29（kolang を書けない）。
+- 失敗の原因（Haiku）: ①ja の添字の括弧忘れ（`lのi番目` → 正しくは `lの(i)番目`。d=1 の失敗 4 問中 3 問）、②pylike で条件に比較がない（`if started:` `if is_prime(x):`。d=4 の失敗 6 問中 5 問）、③標準ライブラリにない関数（`isinstance` 相当、`md5`）。
+- 手を入れるなら: examples に ①②の例を足す／ja の `aのi番目` も読めるようにする（方針の変更なので要相談）／条件を真偽値だけでも書けるようにする／`isinstance` を足す。
 
 ## 次にやること（候補）
 

@@ -11,6 +11,7 @@
                                            同じ名前の prog.doctest があれば、続けてテストする
     kolang pass@1 humaneval/*.ko           .ko と .doctest を実行して pass@1 を計算する（--total 164 で分母を指定）
     kolang eval SYNTAX [-i FILE]           kolangeval.jsonl の正解（pylike）を SYNTAX に変換し、doctest で動作を確かめる
+                                           （--model NAME [--context FILE] [-o OUT.jsonl] でモデルの生成を採点）
     kolang modelppl [-s SYNTAX...]         シンタックスと LLM の親和度（NLL / PPL）。modelppl.csv を埋める
     kolang run prog.py [-f pylike]         実行する（Python 互換。doctest 風の例は答え合わせ）
 """
@@ -263,7 +264,14 @@ def build_eval_parser() -> argparse.ArgumentParser:
     ap.add_argument("-i", "--input", metavar="FILE", help="問題の jsonl（既定: kolang/kolangeval.jsonl）")
     ap.add_argument("-t", "--task", metavar="ID", nargs="+",
                     help="この問題だけ評価する（HumanEval/0 または 0）")
+    ap.add_argument("-d", "--difficulty", metavar="N", type=int, nargs="+",
+                    help="この difficulty の問題だけ評価する（1〜5）")
     ap.add_argument("-q", "--quiet", action="store_true", help="不合格の問題だけ表示する")
+    ap.add_argument("--model", metavar="NAME",
+                    help="このモデル（Hugging Face。claude- で始まれば Anthropic API。要 ANTHROPIC_API_KEY）に prompt を渡してコードを生成し、採点する。結果は jsonl で出す")
+    ap.add_argument("--context", metavar="FILE",
+                    help="モデルに渡す言語の説明（--model のとき）。なければ kolang/examples/*.ko を SYNTAX に変換して使う")
+    ap.add_argument("-o", "--output", metavar="FILE", help="jsonl の出力先（--model のとき。既定: results/kolangeval_<syntax>_<model>[_d<N>].jsonl。- なら標準出力）")
     return ap
 
 
@@ -271,11 +279,19 @@ def eval_command(args: argparse.Namespace) -> int:
     from .kolangeval import DEFAULT_FILE, evaluate, load_problems
     syn = load(args.syntax)
     problems = load_problems(args.input or DEFAULT_FILE)
+    if args.difficulty:
+        problems = [p for p in problems if p.get("difficulty") in args.difficulty]
+        if not problems:
+            raise CliError(f"difficulty {args.difficulty} の問題がありません")
     if args.task:
         wanted = {t if "/" in t else f"HumanEval/{t}" for t in args.task}
         problems = [p for p in problems if p["task_id"] in wanted]
         if not problems:
             raise CliError(f"問題が見つかりません: {' '.join(args.task)}")
+    if args.model:
+        return eval_model_command(args, syn, problems)
+    if args.context or args.output:
+        raise CliError("--context と --output は --model と一緒に使います")
     results = evaluate(syn, problems)
     for r in results:
         if r.ok and args.quiet:
@@ -288,6 +304,34 @@ def eval_command(args: argparse.Namespace) -> int:
     print(f"pass@1 = {n_pass}/{len(scored)} = {n_pass / len(scored):.1%}  ({syn.name})"
           + (f"  スキップ {skipped}" if skipped else ""))
     return 0 if n_pass == len(scored) else 1
+
+
+def eval_model_command(args: argparse.Namespace, syn: Syntax, problems: list) -> int:
+    """モデルでコードを生成して採点し、1 問 1 行の jsonl を出す。要約は標準エラーへ。"""
+    from .kolangeval import build_context, evaluate_recorded, default_output_name, is_claude, make_claude_generator, make_hf_generator
+    try:
+        context = build_context(syn, args.context)
+    except OSError as e:
+        raise CliError(f"--context を読めません: {e}")
+    generate = (make_claude_generator if is_claude(args.model) else make_hf_generator)(args.model, context)
+    path = args.output or default_output_name(syn, args.model, args.difficulty)
+    if path != "-":
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    out = sys.stdout if path == "-" else open(path, "w", encoding="utf-8")
+    n_pass = scored = 0
+    try:
+        for rec in evaluate_recorded(syn, problems, generate, args.model):
+            out.write(json.dumps(rec, ensure_ascii=False) + "\n")
+            out.flush()
+            scored += 1
+            n_pass += rec["doctest"]["ok"]
+    finally:
+        if out is not sys.stdout:
+            out.close()
+    if out is not sys.stdout:
+        print(f"出力: {path}", file=sys.stderr)
+    print(f"pass@1 = {n_pass}/{scored} = {n_pass / max(scored, 1):.1%}  ({syn.name}, {args.model})", file=sys.stderr)
+    return 0 if n_pass == scored else 1
 
 
 def build_show_example_parser() -> argparse.ArgumentParser:

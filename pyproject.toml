@@ -16,4 +16,4 @@ kolang = "kolang.cli:main"
 packages = ["kolang"]
 
 [tool.setuptools.package-data]
-kolang = ["syntaxes/*.json", "kolangeval.jsonl"]
+kolang = ["syntaxes/*.json", "kolangeval.jsonl", "examples/*.ko"]

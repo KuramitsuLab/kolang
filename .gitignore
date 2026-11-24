@@ -13,3 +13,7 @@ __pycache__/
 /pyhumaneval.py
 /pyhumaneval.csv
 /pyhumaneval_samples.jsonl
+
+# kolang eval --model の出力
+kolangeval_*.jsonl
+/results/

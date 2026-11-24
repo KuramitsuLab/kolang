@@ -42,7 +42,8 @@ kolang conv prog.py -f pylike         構文チェックだけ（-t を省略）
 kolang run prog.py [-f pylike]     実行する（ファイルなしなら標準入力）
 kolang run prog.ko                 .ko ファイルを実行する（シンタックスは 1 行目で指定）
 kolang cov examples/*.ko           構文（AST のノード）と標準ライブラリ関数の使用回数を数える
-kolang eval SYNTAX [-t ID...] [-q]  評価問題（kolangeval.jsonl）の正解を SYNTAX に変換し、doctest で動作を確かめる
+kolang eval SYNTAX [-t ID...] [-d N...] [-q]  評価問題（kolangeval.jsonl）の正解を SYNTAX に変換し、doctest で動作を確かめる
+kolang eval SYNTAX --model NAME [--context FILE] [-o OUT.jsonl]  モデルにコードを生成させて採点（結果は jsonl）
 kolang modelppl [-s SYNTAX...]     シンタックスと LLM の親和度を測り、modelppl.csv に書く
 ```
 
@@ -51,7 +52,9 @@ kolang modelppl [-s SYNTAX...]     シンタックスと LLM の親和度を測�
 - `*.emit` に候補の配列を書くと、`--random-emit SEED` のときだけ候補から選びます（省略すると常に最初）。
 - `.ko` ファイルは、1 行目に ` ```ja:jslike(assign) ` のようにシンタックスを書き、閉じの ` ``` ` までをコードとして読みます（`-f` は不要）。`kolang run x.ko` は、同じフォルダに `x.doctest`（フェンスなし、同じシンタックスのコードに、`>>> f(x)` と答えを並べたもの）があれば、続けてテストします。本体で定義した名前（関数・変数）が見えます。`-o out.ko` で変換結果を `.ko` 形式で書けます。
 - `kolang cov FILE...` は、プログラムが使っている構文と標準ライブラリ関数の回数を、全ファイル合計で数えます（`.ko` なら `-f` は不要、ほかは `-f SYNTAX`、既定は pylike）。構文は AST のノードの種類で数え、比較は演算子ごと（`Compare(==)`）です。標準ライブラリは標準名（pylike の名前）で数え、ja など別のシンタックスで書いても同じ名前に集まります。0 回のものも `← 未使用` と出し、最後に `カバー n/m` を表示するので、`examples/` のお手本が構文と標準ライブラリを漏れなく使っているかの確認に使えます。doctest の式と、プログラムが自作した同名の関数は数えません。
-- `kolang eval SYNTAX` は、`kolang/kolangeval.jsonl`（HumanEval から作った 164 問。`prompt` `doctest` `pylike`（正解コード）など）の `pylike` を SYNTAX に変換して読み直し、`doctest` で動作を確かめて pass@1 を出します。`-i FILE` で別の jsonl、`-t 0 1` で問題を絞り、`-q` で不合格だけ表示します。`pylike` のない問題は `SKIP` とし、分母に入れません。終了コードは 0 が全合格、1 が不合格あり。Python からは `kolang.kolangeval` の `evaluate(syntax, problems, solver)` で、`solver(problem, syntax) -> code` を差し替えると、変換の代わりにモデルが生成したコードを採点できます。
+- `kolang eval SYNTAX` は、`kolang/kolangeval.jsonl`（HumanEval から作った 164 問。`prompt` `doctest` `pylike`（正解コード）など）の `pylike` を SYNTAX に変換して読み直し、`doctest` で動作を確かめて pass@1 を出します。`-i FILE` で別の jsonl、`-t 0 1` で問題を絞り、`-d 1`（`difficulty` が 1 の問題だけ。複数可）でも絞り、`-q` で不合格だけ表示します。`pylike` のない問題は `SKIP` とし、分母に入れません。終了コードは 0 が全合格、1 が不合格あり。Python からは `kolang.kolangeval` の `evaluate(syntax, problems, solver)` で、`solver(problem, syntax) -> code` を差し替えると、変換の代わりにモデルが生成したコードを採点できます。
+
+  `--model NAME`（Hugging Face のモデル。torch / transformers が要る。`claude-` で始まる名前は Anthropic API で呼ぶ。`ANTHROPIC_API_KEY` が要り、`claude-haiku-5.5` のように `.` で書いても `claude-haiku-5-5` として扱う。Claude には書き出しの固定を assistant の prefill でなくユーザーメッセージの指示で渡し、temperature は指定しない）を付けると、正解の変換の代わりに、モデルに各問の `prompt` を渡してコードを生成させ、同じ採点をします。システムメッセージに入れる言語の説明は `--context FILE`（中身をそのまま使う）で、なければ `kolang/examples/*.ko` を SYNTAX に変換して並べたものです。生成は貪欲（`do_sample=False`、最大 1024 トークン）で、出力の ``` で囲まれたコードを取り出します。結果は 1 問 1 行の jsonl（`task_id` `model` `syntax` `prompt` `output`（モデルの生の出力）`input_tokens`（入力。チャットテンプレートと書き出しを含む）`output_tokens`（新しく生成した分）`code`（取り出したコード）`doctest`（`ok` `passed` `total`）`error_message`（失敗の理由。なければ null））で、`-o FILE`（既定は `results/kolangeval_<syntax>_<model>.jsonl`（`results/` は自動で作る。`-d 1` なら `_d1`、`-d 1 3` なら `_d1_3` が付く）。英数字と `.` `_` `-` 以外は `_` にする。`-o -` なら標準出力）に出し、pass@1 の要約は標準エラーに出ます。`--context` と `-o` は `--model` のときだけ使えます。
 - `kolang modelppl` は、`modelppl.csv` の第一カラム `syntax` のシンタックスについて、`NLL, tok, char, PPL, bpc` を計算して埋めます（ファイルがなければ、4 つの組み込みシンタックスで新規作成）。既定のモデルは `Qwen/Qwen2.5-Coder-1.5B-Instruct`（`-m` で変更）。詳しくは [modelppl.md](modelppl.md)。
 - `kolang run` の終了コードは、0 が成功、1 が実行時エラーか doctest の不一致、2 が使い方の誤りです。
 
@@ -241,7 +244,7 @@ kolang conv -f pylike -t 'ja:jslike(assign,block,funcapp,stdlib)'
 | `kolang/pyeval.py` | 評価器（Visitor）。Python 互換 |
 | `kolang/structure.py` / `snippet.py` | カスケードの衝突検査（構造検査 / AST スニペットの往復） |
 | `kolang/kofile.py` | `.ko` ファイル（1 行目にシンタックス指定）の読み書き |
-| `kolang/kolangeval.py` | 評価問題（隣の `kolangeval.jsonl`）の採点（`kolang eval`）。Solver を差し替えるとモデルの生成も採点できる |
+| `kolang/kolangeval.py` | 評価問題（隣の `kolangeval.jsonl`）の採点（`kolang eval`）。Solver を差し替えるとモデルの生成も採点できる（`--model` は `make_hf_generator` / `build_context` / `evaluate_recorded`） |
 | `kolang/cov.py` | 構文（AST のノード）と標準ライブラリ関数の使用回数（`kolang cov`） |
 | `kolang/modelppl.py` | LLM の NLL / PPL でシンタックスの親和度を測る（`kolang modelppl`） |
 | `kolang/cli.py` / `examples.py` | `kolang` コマンド / `--show` の例（`show_example` は `snippet.show_snippets`、`show_ebnf` は `ebnf.py`） |
