@@ -314,7 +314,7 @@ def build_eval_parser() -> argparse.ArgumentParser:
     ap.add_argument("--model", metavar="NAME",
                     help="このモデル（Hugging Face。claude- で始まれば Anthropic API。要 ANTHROPIC_API_KEY）に prompt を渡してコードを生成し、採点する。結果は jsonl で出す")
     ap.add_argument("--context", metavar="FILE",
-                    help="モデルに渡す言語の説明（--model のとき）。なければ kolang/examples/*.ko を SYNTAX に変換して使う。`snippet` なら、それに snippet.SNIPPETS（構文ごとの小さな例）も足す")
+                    help="モデルに渡す言語の説明（--model のとき）。なければ kolang/examples/*.ko を SYNTAX に変換して使う。`none` なら何も足さない（空）。`snippet` / `ebnf`（`snippet,ebnf` も可）なら、それに snippet.SNIPPETS（構文ごとの小さな例）/ BNF（show_ebnf）も足す")
     ap.add_argument("-o", "--output", metavar="FILE", help="jsonl の出力先（--model のとき。既定: results/kolangeval_<syntax>_<model>[_d<N>].jsonl。- なら標準出力）")
     return ap
 

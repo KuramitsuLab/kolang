@@ -49,6 +49,25 @@ class TestModelEval(unittest.TestCase):
         self.assertIn("# snippet: assign", ctx)
         self.assertGreater(len(ctx), len(base))
 
+    def test_context_none(self):
+        from kolang.kolangeval import build_context
+        from kolang.syntax import load_syntax
+        self.assertEqual(build_context(load_syntax("ja"), "none"), "")
+
+    def test_context_ebnf(self):
+        from kolang.ebnf import show_ebnf
+        from kolang.kolangeval import build_context
+        from kolang.syntax import load_syntax
+        syn = load_syntax("ja")
+        base = build_context(syn)
+        ctx = build_context(syn, "ebnf")
+        self.assertTrue(ctx.startswith(base))
+        self.assertIn(show_ebnf(syn).rstrip(), ctx)
+        self.assertNotIn("# snippet:", ctx)
+        both = build_context(syn, "snippet,ebnf")
+        self.assertIn("# snippet: assign", both)
+        self.assertIn(show_ebnf(syn).rstrip(), both)
+
     def test_context_file(self):
         import tempfile
         from kolang.kolangeval import build_context

@@ -65,12 +65,18 @@ def build_context(syntax: Syntax, path: Optional[str] = None) -> str:
     """モデルに渡す言語の説明（コンテキスト）。
 
     path があればその中身をそのまま使う。なければ `kolang/examples/*.ko` を syntax に変換して並べる。
-    path が `snippet`（同名のファイルがないとき）なら、examples に続けて `snippet.SNIPPETS` も並べる
-    （そのシンタックスで書けないスニペットは省く）。
+    path が `none`（同名のファイルがないとき）なら、何も足さない（空のコンテキスト。システムメッセージなし）。
+    path が `snippet` / `ebnf`（コンマで両方も可。同名のファイルがないとき）なら、examples に続けて
+    `snippet.SNIPPETS`（そのシンタックスで書けないものは省く）/ `show_ebnf` の BNF も並べる。
     """
-    with_snippets = path == "snippet" and not Path(path).exists()
-    if path and not with_snippets:
+    if path == "none" and not Path(path).exists():
+        return ""
+    extras = set(path.split(",")) if path and not Path(path).exists() else set()
+    if not extras <= {"snippet", "ebnf"}:
+        extras = set()
+    if path and not extras:
         return Path(path).read_text(encoding="utf-8")
+    with_snippets = "snippet" in extras
     from .kofile import join_ko, split_ko
     parts = ["以下は kolang のコードの例です。同じ書き方でコードを書いてください。"]
     for f in sorted(EXAMPLES_DIR.glob("*.ko")):
@@ -86,6 +92,9 @@ def build_context(syntax: Syntax, path: Optional[str] = None) -> str:
             except UnparseError:
                 continue
             parts.append(f"# snippet: {label}\n" + join_ko(syntax.name, text).rstrip())
+    if "ebnf" in extras:
+        from .ebnf import show_ebnf
+        parts.append("以下は、このシンタックスの文法（BNF）です。\n" + show_ebnf(syntax).rstrip())
     return "\n\n".join(parts)
 
 
