@@ -1,0 +1,14 @@
+```enlike
+note: 互除法で最大公約数を求める（while がないので、十分大きい回数の for と break で書く）
+define gcd(a, b):
+    repeat add(a, b) times:
+        if b is equal to 0:
+            break
+        set t to modulo(a, b)
+        set a to b
+        set b to t
+    return a
+print(gcd(48, 18))
+print(gcd(17, 5))
+print(gcd(0, 7))
+```
