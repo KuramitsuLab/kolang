@@ -99,7 +99,7 @@ def failures(syntax) -> list:
 
 
 def show_snippets(syntax, names=None) -> str:
-    """スニペット（names が None なら全部）を syntax で出力した文章。`kolang show_example`。
+    """スニペット（names が None なら全部）を syntax で出力した文章。`kolang show_snippet`。
 
     書けないスニペットは、理由を添えて知らせる。名前が違うときは ValueError。
     """

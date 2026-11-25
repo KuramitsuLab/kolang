@@ -34,8 +34,8 @@ pip install torch transformers     # kolang modelppl を使うときだけ
 ```
 kolang --list                      使えるシンタックスの一覧
 kolang --show lisplike             書き方の例を表示
-kolang show_ebnf ja                 そのシンタックスの BNF（kolang.md の規則を、そのシンタックスの記号で）
-kolang show_example ja [NAME...]   スニペット（検査用の AST）をそのシンタックスで表示（--list で名前の一覧）
+kolang show_ebnf ja                そのシンタックスの BNF（kolang.md の規則を、そのシンタックスの記号で）
+kolang show_snippet ja [NAME...]   スニペット（検査用の AST）をそのシンタックスで表示（--list で名前の一覧）
 kolang conv prog.py -f pylike -t ja   シンタックスを変換（ファイルなしなら標準入力、-o で出力先）
 kolang conv prog.ko -t ja             .ko なら -f は不要
 kolang conv prog.py -f pylike         構文チェックだけ（-t を省略）
@@ -204,9 +204,9 @@ interp = run("x = add(1, 2)\n>>> x\n3\n")              # 実行。interp.globals
 
 `kolang --show 名前` で、作ったシンタックスの書き方の例を確認できます（Python 風の例を、そのシンタックスへ変換して表示します）。
 
-`kolang show_example 名前` は、カスケードの検査に使うスニペット（`kolang/snippet.py` の `SNIPPETS`。入れ子・連続した区切りなど、衝突しやすい形）を、そのシンタックスで書いて表示します。`--show` より細かい形（添字の中の関数呼び出し、`-` の連続など）が見られ、カスケードでも使えます（`kolang show_example "ja:pylike(funcapp)"`）。名前を渡すと、そのスニペットだけ表示します（`kolang show_example ja index_by_call`）。そのシンタックスで書けないものは、理由つきで知らせます。
+`kolang show_snippet SYNTAX [NAME...]` は、カスケードの検査に使うスニペット（`kolang/snippet.py` の `SNIPPETS`。入れ子・連続した区切りなど、衝突しやすい形）を、そのシンタックスで書いて表示します。`--show` より細かい形（添字の中の関数呼び出し、`-` の連続など）が見られ、カスケードでも使えます（`kolang show_snippet "ja:pylike(funcapp)"`）。名前を渡すと、そのスニペットだけ表示します（`kolang show_snippet ja index_by_call`）。そのシンタックスで書けないものは、理由つきで知らせます。
 
-`kolang show_ebnf 名前` は、`kolang.md` の規則を、そのシンタックスの記号に置き換えた BNF を表示します（空の記号は省き、`call` の順序・添字の形・`toplevel`・省略可の `neg` / `grouping` の有無も反映します。固定の文字列でない記号は、最後に正規表現を載せます）。カスケードも指定できます。
+`kolang show_ebnf SYNTAX` は、`kolang.md` の規則を、そのシンタックスの記号に置き換えた BNF を表示します（空の記号は省き、`call` の順序・添字の形・`toplevel`・省略可の `neg` / `grouping` の有無も反映します。固定の文字列でない記号は、最後に正規表現を載せます）。カスケードも指定できます。
 
 ### カスケード（一部だけ差し替える）
 
@@ -249,7 +249,7 @@ kolang conv -f pylike -t 'ja:jslike(assign,block,funcapp,stdlib)'
 | `kolang/kolangeval.py` | 評価問題（隣の `kolangeval.jsonl`）の採点（`kolang eval`）。Solver を差し替えるとモデルの生成も採点できる（`--model` は `make_hf_generator` / `build_context` / `evaluate_recorded`） |
 | `kolang/cov.py` | 構文（AST のノード）と標準ライブラリ関数の使用回数（`kolang cov`） |
 | `kolang/modelppl.py` | LLM の NLL / PPL でシンタックスの親和度を測る（`kolang modelppl`） |
-| `kolang/cli.py` / `examples.py` | `kolang` コマンド / `--show` の例（`show_example` は `snippet.show_snippets`、`show_ebnf` は `ebnf.py`） |
+| `kolang/cli.py` / `examples.py` | `kolang` コマンド / `--show` の例（`show_snippet` は `snippet.show_snippets`、`show_ebnf` は `ebnf.py`） |
 
 ## テスト
 

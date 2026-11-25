@@ -2,7 +2,7 @@
 
     kolang --list                          使えるシンタックスの一覧
     kolang --show lisplike                 書き方の例
-    kolang show_example ja [NAME...]       スニペット（カスケード検査用の AST。snippet.py）をそのシンタックスで表示
+    kolang show_snippet ja [NAME...]       スニペット（カスケード検査用の AST。snippet.py）をそのシンタックスで表示
     kolang show_ebnf ja                    そのシンタックスの BNF（kolang.md の規則を、そのシンタックスの記号で）
     kolang conv prog.py -f pylike -t ja    シンタックスの変換（ファイルなしなら標準入力、-o で出力先）
     kolang conv prog.ko -t ja              .ko なら -f は不要（1 行目で指定）
@@ -91,7 +91,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="kolang",
         description="kolang（こ言語）: 書き方（シンタックス）を選べる言語。"
                     "書き方の表示と、シンタックス間の変換ができる。",
-        epilog="スニペットの表示は `kolang show_example SYNTAX`、BNF は `kolang show_ebnf SYNTAX`。変換は `kolang conv FILE -t SYNTAX`（kolang conv -h）、実行は `kolang run FILE [-f SYNTAX]`（kolang run -h）。\nシンタックスは、名前（kolang --list に出るもの）か、JSON ファイルのパスで指定する。",
+        epilog="スニペットの表示は `kolang show_snippet SYNTAX`、BNF は `kolang show_ebnf SYNTAX`。変換は `kolang conv FILE -t SYNTAX`（kolang conv -h）、実行は `kolang run FILE [-f SYNTAX]`（kolang run -h）。\nシンタックスは、名前（kolang --list に出るもの）か、JSON ファイルのパスで指定する。",
     )
     ap.add_argument("--list", action="store_true", help="使えるシンタックスの一覧を表示する")
     ap.add_argument("--show", metavar="SYNTAX", help="シンタックスの書き方の例を表示する")
@@ -378,9 +378,9 @@ def eval_model_command(args: argparse.Namespace, syn: Syntax, problems: list) ->
     return 0 if n_pass == scored else 1
 
 
-def build_show_example_parser() -> argparse.ArgumentParser:
+def build_show_snippet_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
-        prog="kolang show_example",
+        prog="kolang show_snippet",
         description="スニペット（カスケードの検査に使う AST。kolang/snippet.py）を、シンタックスで書いて表示する。",
     )
     ap.add_argument("syntax", metavar="SYNTAX", help="名前、JSON のパス、カスケード（ja:jslike(assign,block)）")
@@ -389,7 +389,7 @@ def build_show_example_parser() -> argparse.ArgumentParser:
     return ap
 
 
-def show_example_command(args: argparse.Namespace) -> int:
+def show_snippet_command(args: argparse.Namespace) -> int:
     from .snippet import SNIPPETS, show_snippets
     if args.list:
         sys.stdout.write("".join(f"{name}\n" for name in SNIPPETS))
@@ -427,8 +427,8 @@ def main(argv: Optional[list] = None) -> int:
         if argv and argv[0] == "modelppl":
             from .modelppl import main as modelppl_main      # torch 系は測るときだけ読む
             return modelppl_main(argv[1:], prog="kolang modelppl")
-        if argv and argv[0] == "show_example":
-            return show_example_command(build_show_example_parser().parse_args(argv[1:]))
+        if argv and argv[0] == "show_snippet":
+            return show_snippet_command(build_show_snippet_parser().parse_args(argv[1:]))
         if argv and argv[0] == "show_ebnf":
             return show_ebnf_command(build_show_ebnf_parser().parse_args(argv[1:]))
         if argv and argv[0] == "conv":

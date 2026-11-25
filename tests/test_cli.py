@@ -48,24 +48,24 @@ class Show(unittest.TestCase):
                 self.assertEqual(code, 0)
                 self.assertNotIn("書けません", out)
 
-    def test_show_example(self):
+    def test_show_snippet(self):
         from kolang.snippet import SNIPPETS
-        code, out, _ = run("show_example", "ja")
+        code, out, _ = run("show_snippet", "ja")
         self.assertEqual(code, 0)
         self.assertTrue(out.startswith("ja\n"))
         for name in SNIPPETS:
             self.assertIn(f"■ {name}\n", out)
         self.assertNotIn("書けません", out)
 
-    def test_show_example_selected_and_errors(self):
-        code, out, _ = run("show_example", "lisplike", "assign", "index")
+    def test_show_snippet_selected_and_errors(self):
+        code, out, _ = run("show_snippet", "lisplike", "assign", "index")
         self.assertEqual(code, 0)
         self.assertEqual(out.count("■"), 2)
         self.assertIn("(set x 1)", out)
-        code, _, err = run("show_example", "ja", "nope")
+        code, _, err = run("show_snippet", "ja", "nope")
         self.assertEqual(code, 1)
         self.assertIn("nope", err)
-        code, out, _ = run("show_example", "ja", "--list")
+        code, out, _ = run("show_snippet", "ja", "--list")
         self.assertEqual(code, 0)
         self.assertIn("assign\n", out)
 

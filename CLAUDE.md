@@ -4,7 +4,7 @@ kolang（こ言語）の作業メモ。続きを始めるときは、まずこ�
 
 ## これは何か
 
-シンタックス可変言語。文法の骨格は固定で、区切りの記号（`block_begin` `if_then` などのトークン名）を、JSON の正規表現で差し替える。Python 風・日本語風・Lisp 風・JavaScript 風が同じ AST になる。パーサ、出力器（シンタックス間の変換）、コメントの保持、`kolang` コマンドまで実装済み。評価器は `pyeval.py`（Python 互換、Visitor）がある。`kolang run FILE [-f SYNTAX]` で実行、`kolang conv FILE [-f SYNTAX] -t SYNTAX` で変換できる（`.md`、またはブロックが 2 個以上の `.ko` は、文書中の ```` ```シンタックス ```` ブロックを全部変換して文章を残す。`cli.py` の `convert_document`、`kofile.map_blocks`。読めない info string のブロックは触らない。`-t` なしは検査だけ）。`kolang show_ebnf SYNTAX` は、`kolang.md` の規則をそのシンタックスの記号で書いた BNF を出す（`ebnf.show_ebnf`）。`kolang show_example SYNTAX [NAME...]` は、`snippet.SNIPPETS` をそのシンタックスで書いて表示する（`snippet.show_snippets`。カスケードの衝突の原因を目で見る用。`--list` で名前の一覧）`kolang eval SYNTAX [-i FILE] [-t ID...] [-d N...] [-q]`（`-d` は difficulty で絞る）は、`kolang/kolangeval.jsonl` の `pylike` を SYNTAX に変換して読み直し、`doctest` で動作を確かめる（`kolangeval.py` の `check` / `evaluate`。`pylike` のない問題は SKIP で分母に入れない。コードを作る部分は `Solver(problem, syntax) -> code` で差し替えられる。既定は `reference_solver`。`--model` でモデルに `prompt` を渡す Solver を使う）。`kolang cov FILE.ko... [-f SYNTAX]` は、構文（AST のノードの種類。比較は演算子ごと）と標準ライブラリ関数の使用回数を全ファイル合計で数え、0 回も表に出す（`cov.py` の `count_program` / `report`。doctest の式と自作の同名関数は数えない。`examples/` のカバー確認用）。`kolang pass@1 FILE.ko... [--total N]` は、`.ko` と同名の `.doctest` を実行して pass@1 を出す（`cli.py` の `check_problem` / `pass_command`。合格 = 実行がエラーなく終わり、doctest が 1 件以上あって全件一致。`--total 164` で分母を HumanEval の総数にする。終了コード 0 全合格 / 1 不合格あり）。HumanEval の記録は `humaneval.md`（`humaneval.jsonl`、移植 `humaneval/NNN.{ko,doctest}`、prompt から kolang で書いた `humaneval_gen/NNN.{ko,doctest}`。`kolang pass@1 humaneval/*.ko humaneval_gen/*.ko --total 164` で 162/164）（`cli.py` の `run_program` → `pyeval.execute`。終了コード 0 成功 / 1 実行時エラーか doctest の不一致）。
+シンタックス可変言語。文法の骨格は固定で、区切りの記号（`block_begin` `if_then` などのトークン名）を、JSON の正規表現で差し替える。Python 風・日本語風・Lisp 風・JavaScript 風が同じ AST になる。パーサ、出力器（シンタックス間の変換）、コメントの保持、`kolang` コマンドまで実装済み。評価器は `pyeval.py`（Python 互換、Visitor）がある。`kolang run FILE [-f SYNTAX]` で実行、`kolang conv FILE [-f SYNTAX] -t SYNTAX` で変換できる（`.md`、またはブロックが 2 個以上の `.ko` は、文書中の ```` ```シンタックス ```` ブロックを全部変換して文章を残す。`cli.py` の `convert_document`、`kofile.map_blocks`。読めない info string のブロックは触らない。`-t` なしは検査だけ）。`kolang show_ebnf SYNTAX` は、`kolang.md` の規則をそのシンタックスの記号で書いた BNF を出す（`ebnf.show_ebnf`）。`kolang show_snippet SYNTAX [NAME...]` は、`snippet.SNIPPETS` をそのシンタックスで書いて表示する（`snippet.show_snippets`。カスケードの衝突の原因を目で見る用。`--list` で名前の一覧）`kolang eval SYNTAX [-i FILE] [-t ID...] [-d N...] [-q]`（`-d` は difficulty で絞る）は、`kolang/kolangeval.jsonl` の `pylike` を SYNTAX に変換して読み直し、`doctest` で動作を確かめる（`kolangeval.py` の `check` / `evaluate`。`pylike` のない問題は SKIP で分母に入れない。コードを作る部分は `Solver(problem, syntax) -> code` で差し替えられる。既定は `reference_solver`。`--model` でモデルに `prompt` を渡す Solver を使う）。`kolang cov FILE.ko... [-f SYNTAX]` は、構文（AST のノードの種類。比較は演算子ごと）と標準ライブラリ関数の使用回数を全ファイル合計で数え、0 回も表に出す（`cov.py` の `count_program` / `report`。doctest の式と自作の同名関数は数えない。`examples/` のカバー確認用）。`kolang pass@1 FILE.ko... [--total N]` は、`.ko` と同名の `.doctest` を実行して pass@1 を出す（`cli.py` の `check_problem` / `pass_command`。合格 = 実行がエラーなく終わり、doctest が 1 件以上あって全件一致。`--total 164` で分母を HumanEval の総数にする。終了コード 0 全合格 / 1 不合格あり）。HumanEval の記録は `humaneval.md`（`humaneval.jsonl`、移植 `humaneval/NNN.{ko,doctest}`、prompt から kolang で書いた `humaneval_gen/NNN.{ko,doctest}`。`kolang pass@1 humaneval/*.ko humaneval_gen/*.ko --total 164` で 162/164）（`cli.py` の `run_program` → `pyeval.execute`。終了コード 0 成功 / 1 実行時エラーか doctest の不一致）。
 
 - 文法: `kolang.md`（トークン名と規則の定義。仕様の正）
 - 使い方: `README.md`（コマンド・実行・Python API・シンタックスの作り方・カスケードと衝突検査・仕組み・制約）
@@ -42,7 +42,7 @@ kolang/
   comments.py     コメントを文に付ける（後処理）と、collect_comments
   regexgen.py     正規表現 → 固定文字列・出力例・引用符（re._parser を使う）
   unparser.py     AST → ソース。make_unparser / unparse / convert（読み直して AST を検証）
-  cli.py          kolang コマンド（--list / --show / show_example / show_ebnf / conv / run / modelppl）
+  cli.py          kolang コマンド（--list / --show / show_snippet / show_ebnf / conv / run / modelppl）
   stdlib.py       標準ライブラリ関数（print、四則演算 add/sub/mul/div、len など。Python のもの）。標準名の表
   pyeval.py       評価器。Visitor（visit_XXX）。Python 互換。`python3 -m kolang.pyeval FILE [-f SYNTAX]`
   structure.py    構造検査 problems(syntax): トークン定義だけを見て、読み書きできない組み合わせを文章で返す
@@ -110,6 +110,6 @@ tests/            test_lib / test_modelppl / test_kofile / test_pylike / test_ja
 1. 足りない関数を増やす（`floordiv`、`set` `isinstance` `ceil` `floor` `filter` など。`humaneval.md` の「変換できない問題の原因」が、足りない順）。まず `lib/` に kolang で書けないか考え、書けないものだけ `stdlib.py` の表に足す。
 2. `LICENSE` の著作権者を、ユーザーに確認して直す。
 3. lisplike の整形（`(if c` の本体を改行・インデントする。begin / end が空なので、今は 1 行）。
-4. 新しいシンタックスの追加（ブレース形式など）。`kolang --show` / `kolang show_example` と変換テストで確認する。
+4. 新しいシンタックスの追加（ブレース形式など）。`kolang --show` / `kolang show_snippet` と変換テストで確認する。
 5. modelppl の拡張（`--random-emit` の版を並べる、複数モデルを一括で回す、スニペットごとの CSV）。
 6. （任意）コメントの付き方の改善（else の行、ブロック末尾をインデントで判定）。
