@@ -47,6 +47,26 @@ class Cli(unittest.TestCase):
         self.assertTrue(text.startswith("```ja\n") and text.endswith("\n```\n"))
         self.assertEqual(run("run", out_path)[0], 0)
 
+    def test_convert_multiple_blocks(self):
+        doc = "# 題\n\n```pylike\nx = 1\n```\n\n文章\n\n```bash\nls\n```\n\n```pylike\ny = 2\n```\n"
+        path = self.write("doc.ko", doc)
+        code, out, _ = run("conv", path, "-t", "ja")
+        self.assertEqual(code, 0)
+        self.assertEqual(out.count("```ja\n"), 2)
+        self.assertIn("# 題", out)
+        self.assertIn("文章", out)
+        self.assertIn("```bash\nls\n```", out)
+        self.assertNotIn("pylike", out)
+
+    def test_convert_markdown(self):
+        path = self.write("doc.md", "# 題\n\n```pylike\nx = 1\n```\n\n```python\nx = 1\n```\n")
+        code, out, _ = run("conv", path, "-t", "ja")
+        self.assertEqual(code, 0)
+        self.assertIn("```ja\nxに1を代入\n```", out)
+        self.assertIn("```python\nx = 1\n```", out)
+        code, out, _ = run("conv", path)
+        self.assertEqual((code, out), (0, "OK: 1 個のコードブロック\n"))
+
     def test_missing_fence(self):
         path = self.write("a.ko", "x = 1\n")
         code, _, err = run("run", path)

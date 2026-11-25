@@ -39,6 +39,7 @@ kolang show_example ja [NAME...]   スニペット（検査用の AST）をそ�
 kolang conv prog.py -f pylike -t ja   シンタックスを変換（ファイルなしなら標準入力、-o で出力先）
 kolang conv prog.ko -t ja             .ko なら -f は不要
 kolang conv prog.py -f pylike         構文チェックだけ（-t を省略）
+kolang conv doc.md -t ja              .md の ```pylike などのブロックを全部変換（文章はそのまま）
 kolang run prog.py [-f pylike]     実行する（ファイルなしなら標準入力）
 kolang run prog.ko                 .ko ファイルを実行する（シンタックスは 1 行目で指定）
 kolang cov examples/*.ko           構文（AST のノード）と標準ライブラリ関数の使用回数を数える
@@ -51,6 +52,7 @@ kolang modelppl [-s SYNTAX...]     シンタックスと LLM の親和度を測�
 - 変換では、標準ライブラリ関数の名前も書き換わります。止めるには `--no-rename` です。
 - `*.emit` に候補の配列を書くと、`--random-emit SEED` のときだけ候補から選びます（省略すると常に最初）。
 - `.ko` ファイルは、1 行目に ` ```ja:jslike(assign) ` のようにシンタックスを書き、閉じの ` ``` ` までをコードとして読みます（`-f` は不要）。`kolang run x.ko` は、同じフォルダに `x.doctest`（フェンスなし、同じシンタックスのコードに、`>>> f(x)` と答えを並べたもの）があれば、続けてテストします。本体で定義した名前（関数・変数）が見えます。`-o out.ko` で変換結果を `.ko` 形式で書けます。
+- `kolang conv` は、**文書の中の複数のコードブロック**も変換できます。入力が `.md`、または ```` ```シンタックス ```` のブロックが 2 個以上ある `.ko` で `-t` を付けると、各ブロックを変換し（開きのフェンスも `-t` のシンタックスに書き換わる）、ブロックの外の文章はそのまま出力します。info string がシンタックスとして読めないブロック（```` ```python ```` ```` ```bash ```` など）は触りません。`-f` があれば、info string のあるブロックすべてを `-f` で読みます。`-t` を省略すると各ブロックが読めるかだけ検査し（`OK: N 個のコードブロック`）、変換できるブロックが 1 つもなければエラーです。ブロックが 1 個だけの `.ko` は従来どおり（コードだけを出力。`-o x.ko` なら ```` ```dst ```` で包む）です。
 - `kolang cov FILE...` は、プログラムが使っている構文と標準ライブラリ関数の回数を、全ファイル合計で数えます（`.ko` なら `-f` は不要、ほかは `-f SYNTAX`、既定は pylike）。構文は AST のノードの種類で数え、比較は演算子ごと（`Compare(==)`）です。標準ライブラリは標準名（pylike の名前）で数え、ja など別のシンタックスで書いても同じ名前に集まります。0 回のものも `← 未使用` と出し、最後に `カバー n/m` を表示するので、`examples/` のお手本が構文と標準ライブラリを漏れなく使っているかの確認に使えます。doctest の式と、プログラムが自作した同名の関数は数えません。
 - `kolang eval SYNTAX` は、`kolang/kolangeval.jsonl`（HumanEval から作った 164 問。`prompt` `doctest` `pylike`（正解コード）など）の `pylike` を SYNTAX に変換して読み直し、`doctest` で動作を確かめて pass@1 を出します。`-i FILE` で別の jsonl、`-t 0 1` で問題を絞り、`-d 1`（`difficulty` が 1 の問題だけ。複数可）でも絞り、`-q` で不合格だけ表示します。`pylike` のない問題は `SKIP` とし、分母に入れません。終了コードは 0 が全合格、1 が不合格あり。Python からは `kolang.kolangeval` の `evaluate(syntax, problems, solver)` で、`solver(problem, syntax) -> code` を差し替えると、変換の代わりにモデルが生成したコードを採点できます。
 

@@ -21,12 +21,13 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from typing import Optional
 
 from .combinators import ParseError
 from .examples import show
-from .kofile import is_ko, join_ko, split_ko
+from .kofile import is_ko, join_ko, map_blocks, split_ko
 from .parser import make_parser, parse
 from .syntax import SYNTAX_DIR, Syntax, load_syntax
 from .unparser import convert
@@ -63,7 +64,7 @@ def load(name: str) -> Syntax:
 
 
 def add_convert_options(ap: argparse.ArgumentParser) -> None:
-    ap.add_argument("file", nargs="?", help="入力ファイル（省略すると標準入力）")
+    ap.add_argument("file", nargs="?", help="入力ファイル（省略すると標準入力。.md は ```シンタックス のブロックをすべて変換）")
     ap.add_argument("-f", "--from", dest="src", metavar="SYNTAX",
                     help="入力のシンタックス（.ko ファイルなら不要。あれば -f が優先）")
     ap.add_argument("-t", "--to", dest="dst", metavar="SYNTAX",
@@ -118,9 +119,16 @@ def run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
 
 
 def convert_command(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
-    if args.src is None and not is_ko(args.file):
+    is_md = args.file is not None and args.file.endswith(".md")
+    if args.src is None and not is_ko(args.file) and not is_md:
         ap.error("入力のシンタックスを -f/--from で指定してください（.ko ファイルなら不要）")
 
+    if is_md:
+        return convert_document(read_source(args.file), args)
+    if is_ko(args.file) and args.dst is not None:
+        raw = read_source(args.file)
+        if len(re.findall(r"^```\S", raw, re.M)) > 1:
+            return convert_document(raw, args)
     source, spec = read_program(args.file, args.src)
     src = load(spec)
     if args.dst is None:
@@ -132,6 +140,42 @@ def convert_command(args: argparse.Namespace, ap: argparse.ArgumentParser) -> in
     if args.output:
         if is_ko(args.output):
             text = join_ko(args.dst, text)
+        with open(args.output, "w", encoding="utf-8") as f:
+            f.write(text)
+    else:
+        sys.stdout.write(text)
+    return 0
+
+
+def convert_document(raw: str, args: argparse.Namespace) -> int:
+    """複数の ```シンタックス ブロックがある .ko や、.md。各ブロックを変換し、文章はそのまま残す。
+    -t がなければ、各ブロックを読めるか検査するだけ。
+
+    -f があれば、info string のあるブロックすべてを -f として読む。
+    なければ、info string がシンタックスとして読めるブロックだけ変換する（```bash などは触らない）。
+    """
+    dst = load(args.dst) if args.dst else None
+
+    def one(spec: str, code: str):
+        if args.src is None:
+            try:
+                load_syntax(spec, verify=False)
+            except Exception:
+                return None
+        src = load(args.src or spec)
+        if dst is None:
+            make_parser(src)(code)
+            return spec, code
+        return args.dst, convert(code, src, dst,
+                                 rename=not args.no_rename, random_emit=args.random_emit)
+
+    text, n = map_blocks(raw, one)
+    if n == 0:
+        raise CliError("変換できるコードブロック（```シンタックス）がありません")
+    if dst is None:
+        print(f"OK: {n} 個のコードブロック")
+        return 0
+    if args.output:
         with open(args.output, "w", encoding="utf-8") as f:
             f.write(text)
     else:
