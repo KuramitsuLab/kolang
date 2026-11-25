@@ -1,0 +1,167 @@
+{
+  "name": "okinawa",
+  "description": "沖縄語（ウチナーグチ）ふう。草稿。語彙・活用は話者の確認が要る。ブロックは はじみ 〜 うわい。名前は英数字。",
+  "layout": "none",
+  "toplevel": "bare",
+  "space": "[ 　\\t\\r\\n]+",
+  "word_segment": "[A-Za-z0-9_]",
+  "tokens": {
+    "comment": {
+      "begin": "ところで、",
+      "end": "(?=\\n)|\\Z"
+    },
+    "block": {
+      "begin": "はじみ",
+      "begin.emit": " はじみ",
+      "sep": "",
+      "sep.emit": " ",
+      "end": "うわい"
+    },
+    "assign": {
+      "begin": "",
+      "op": "ゆ",
+      "end": "んかいいーん",
+      "order": "value_first"
+    },
+    "append": {
+      "begin": "",
+      "sep": "ゆ",
+      "end": "んかいちきーん",
+      "order": "value_first"
+    },
+    "inc": {
+      "begin": "",
+      "end": "ゆふやすん"
+    },
+    "dec": {
+      "begin": "",
+      "end": "ゆへらすん"
+    },
+    "if": {
+      "begin": "あらー",
+      "then": "やれー",
+      "end": ""
+    },
+    "ne": {
+      "begin": "",
+      "sep": "ぬ",
+      "end": "とちがいん"
+    },
+    "lt": {
+      "begin": "",
+      "sep": "ぬ",
+      "end": "ゆいぐまさん"
+    },
+    "gt": {
+      "begin": "",
+      "sep": "ぬ",
+      "end": "ゆいうふさん"
+    },
+    "le": {
+      "begin": "",
+      "sep": "ぬ",
+      "end": "以下"
+    },
+    "ge": {
+      "begin": "",
+      "sep": "ぬ",
+      "end": "以上"
+    },
+    "eq": {
+      "begin": "",
+      "sep": "ぬ",
+      "end": "とゆなじ"
+    },
+    "else": {
+      "begin": "やらんねー",
+      "end": ""
+    },
+    "repeat": {
+      "begin": "",
+      "do": "回くいけーすん",
+      "end": ""
+    },
+    "break": "とぅまいん",
+    "def": {
+      "begin": "わじゃ",
+      "begin.emit": "わじゃ ",
+      "name_end": "\\(",
+      "end": ""
+    },
+    "params": {
+      "begin": "",
+      "end": "\\)やさ"
+    },
+    "param": {
+      "sep": ",|(?=\\))",
+      "sep.emit": ", "
+    },
+    "return": {
+      "begin": "",
+      "end": "ゆけーすん"
+    },
+    "true": "まくとぅ",
+    "false": "ゆくし",
+    "none": "ねーん",
+    "list": {
+      "begin": "\\[",
+      "sep": ",|(?=\\])",
+      "sep.emit": ", ",
+      "end": "\\]"
+    },
+    "grouping": {
+      "begin": "\\(",
+      "end": "\\)"
+    },
+    "neg": {
+      "begin": "-",
+      "end": ""
+    },
+    "index": {
+      "begin": "ぬ\\(",
+      "end": "\\)ばんみ"
+    },
+    "funcapp": {
+      "order": "args_first",
+      "begin": "\\(",
+      "name_end": "\\)ゆ",
+      "end": "んかいちかたるむん",
+      "arg_sep": ",|(?=\\))",
+      "arg_sep.emit": ", "
+    }
+  },
+  "stdlib": {
+    "print": "あらわし",
+    "abs": "ぜったいち",
+    "bool": "しんぎ",
+    "chr": "くーどから",
+    "float": "しょーしゅー",
+    "int": "せーしゅー",
+    "len": "ながさ",
+    "list": "れつ",
+    "max": "いちばんうふ",
+    "min": "いちばんぐま",
+    "ord": "もーじくーど",
+    "range": "はんい",
+    "round": "しじゃごにゅー",
+    "sorted": "ならびなおし",
+    "str": "もーじれつ",
+    "sum": "ごーけー",
+    "add": "たし",
+    "sub": "ひき",
+    "mul": "かけ",
+    "div": "わり",
+    "mod": "あまい",
+    "pow": "かさね"
+  },
+  "lexical": {
+    "letters": "[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*",
+    "number": "[0-9]+(?:\\.[0-9]+)?",
+    "string": "\"(?:[^\"\\\\\\n]|\\\\.)*\"|'(?:[^'\\\\\\n]|\\\\.)*'",
+    "quote": {
+      "begin": "_",
+      "end": "_"
+    },
+    "characters": "[^_\\n]+"
+  }
+}
