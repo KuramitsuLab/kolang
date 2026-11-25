@@ -1,0 +1,17 @@
+```cobollike
+*> 互除法で最大公約数を求める（while がないので、十分大きい回数の for と break で書く）
+DEFINE gcd USING a, b.
+    PERFORM FUNCTION ADD(a, b) TIMES
+        IF b IS EQUAL TO 0 THEN
+            EXIT PERFORM.
+        END-IF.
+        MOVE FUNCTION MOD(a, b) TO t.
+        MOVE b TO a.
+        MOVE t TO b.
+    END-PERFORM.
+    RETURN a.
+END-DEFINE.
+FUNCTION DISPLAY(FUNCTION gcd(48, 18)).
+FUNCTION DISPLAY(FUNCTION gcd(17, 5)).
+FUNCTION DISPLAY(FUNCTION gcd(0, 7)).
+```
