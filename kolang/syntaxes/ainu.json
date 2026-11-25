@@ -1,0 +1,49 @@
+{
+  "name": "ainu",
+  "description": "アイヌ語ふう（草稿）。カタカナ表記（小書きの ㇰ ㇱ ㇷ ㇺ ㇻ など）、動詞が文末、後置詞。基本語彙のほかは作語で、話者の確認が要る。名前は英数字。",
+  "layout": "none",
+  "toplevel": "bare",
+  "space": "[ 　\\t\\r\\n]+",
+  "word_segment": "[A-Za-z0-9_]",
+  "tokens": {
+    "comment": { "begin": "※", "end": "(?=\\n)|\\Z" },
+    "block": { "begin": "オアシ", "begin.emit": " オアシ", "sep": "", "sep.emit": " ", "end": "オケレ" },
+    "assign": { "begin": "", "op": "", "op.emit": " ", "end": "ネカㇻ", "order": "target_first" },
+    "append": { "begin": "", "sep": "ウン", "end": "カシレ", "order": "value_first" },
+    "inc": { "begin": "", "end": "ポロレ" },
+    "dec": { "begin": "", "end": "ポンレ" },
+    "if": { "begin": "", "then": "ヤクン", "end": "" },
+    "ne": { "begin": "", "sep": "ネワ", "end": "オヤㇰ" },
+    "lt": { "begin": "", "sep": "ネワ", "end": "カスノポン" },
+    "gt": { "begin": "", "sep": "ネワ", "end": "カスノポロ" },
+    "le": { "begin": "", "sep": "ネワ", "end": "ポンヤッカコラチ" },
+    "ge": { "begin": "", "sep": "ネワ", "end": "ポロヤッカコラチ" },
+    "eq": { "begin": "", "sep": "ネワ", "end": "コラチ" },
+    "else": { "begin": "ソモヤクン", "end": "" },
+    "repeat": { "begin": "", "do": "カンナカンナ ?キ", "do.emit": "カンナカンナ キ", "end": "" },
+    "break": "アシン",
+    "def": { "begin": "レカㇻ", "begin.emit": "レカㇻ ", "name_end": "\\(", "end": "" },
+    "params": { "begin": "", "end": "\\)ネ" },
+    "param": { "sep": ",|(?=\\))", "sep.emit": ", " },
+    "return": { "begin": "", "end": "ホシピレ" },
+    "true": "ソンノ",
+    "false": "ソモ ?ソンノ",
+    "none": "イサㇺ",
+    "list": { "begin": "\\[", "sep": ",|(?=\\])", "sep.emit": ", ", "end": "\\]" },
+    "grouping": { "begin": "\\(", "end": "\\)" },
+    "neg": { "begin": "-", "end": "" },
+    "index": { "begin": "オロ\\(", "end": "\\)ケ" },
+    "funcapp": { "order": "args_first", "begin": "\\(", "name_end": "\\)ウン", "end": "イェ", "arg_sep": ",|(?=\\))", "arg_sep.emit": ", " }
+  },
+  "emit": { "false": "ソモ ソンノ" },
+  "stdlib": {
+    "print": "ヌカレ"
+  },
+  "lexical": {
+    "letters": "[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*",
+    "number": "[0-9]+(?:\\.[0-9]+)?",
+    "string": "\"(?:[^\"\\\\\\n]|\\\\.)*\"|'(?:[^'\\\\\\n]|\\\\.)*'",
+    "quote": { "begin": "_", "end": "_" },
+    "characters": "[^_\\n]+"
+  }
+}

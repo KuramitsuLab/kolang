@@ -170,7 +170,7 @@ interp = run("x = add(1, 2)\n>>> x\n3\n")              # 実行。interp.globals
 
 ## シンタックスを作る
 
-`kolang/syntaxes/` に JSON を置きます（または JSON のパスを直接指定します）。`pylike.json`、`jalike.json`、`lisplike.json`、`jslike.json` が実例です。全キーの詳しい書き方は [syntax.md](syntax.md) にあります。
+`kolang/syntaxes/` に JSON を置きます（または JSON のパスを直接指定します）。`pylike.json`、`jalike.json`、`lisplike.json`、`jslike.json`、`pslike.json`、`kobun.json`（古文帳。平安のかな文学ふう）、`manyo.json`（万葉仮名。音を漢字で書く）、`ainu.json`（アイヌ語ふう。草稿）が実例です。全キーの詳しい書き方は [syntax.md](syntax.md) にあります。
 
 ```jsonc
 {
