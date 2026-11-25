@@ -253,7 +253,7 @@ def load_syntax(source: Union[str, Path], verify: bool = True) -> Syntax:
       2. 1 で何も見つからなかったカスケードは、`snippet.SNIPPETS` を出力 → パースして、戻らないものを知らせる。
     """
     text = str(source)
-    cascade = ":" in text and not _is_path(text)
+    cascade = is_cascade(text)
     if not cascade:
         data = _read_json(source)
         syn = syntax_from_dict(data, data.pop("_label"))
@@ -277,7 +277,17 @@ def load_syntax(source: Union[str, Path], verify: bool = True) -> Syntax:
     return syn
 
 
-def _warn_collisions(syn: Syntax, label: str, cascade: bool) -> None:
+def is_cascade(source: Union[str, Path]) -> bool:
+    """source がカスケード（"jalike:jslike(assign)"）の書き方か。"""
+    text = str(source)
+    return ":" in text and not _is_path(text)
+
+
+def collisions(syn: Syntax, cascade: bool) -> list:
+    """区切りの衝突の一覧（文章のリスト。なければ空）。load_syntax の検査と `kolang check` が使う。
+
+    構造検査（structure.problems）で見つからなかったカスケードだけ、スニペットの往復も調べる。
+    """
     from .structure import problems
     found = problems(syn)
     if not found and cascade:
@@ -285,6 +295,11 @@ def _warn_collisions(syn: Syntax, label: str, cascade: bool) -> None:
         found = [f"{name}: {why}" for name, why in failures(syn)]
         if found:
             found.insert(0, f"スニペット {len(found)} 件が、出力 → パースで元の AST に戻らない")
+    return found
+
+
+def _warn_collisions(syn: Syntax, label: str, cascade: bool) -> None:
+    found = collisions(syn, cascade)
     if found:
         lines = "\n".join(f"  {line}" for line in found)
         warnings.warn(f"{label}: 区切りが衝突している\n{lines}", UserWarning, stacklevel=3)

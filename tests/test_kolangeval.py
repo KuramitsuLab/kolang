@@ -22,7 +22,25 @@ class KolangEvalTest(unittest.TestCase):
         self.assertFalse(check(p, load_syntax("pylike"), lambda prob, syn: "def (").ok)
 
     def test_cli(self):
-        self.assertEqual(main(["eval", "jalike", "-t", "0"]), 0)
+        self.assertEqual(main(["check", "jalike", "-t", "0"]), 0)
+
+    def test_check_reports_collisions(self):
+        import io
+        from contextlib import redirect_stdout
+        out = io.StringIO()
+        with redirect_stdout(out):
+            self.assertEqual(main(["check", "pylike:lisplike(block)", "--no-eval"]), 1)
+        self.assertIn("NG", out.getvalue())
+        self.assertIn("if_end", out.getvalue())
+        with redirect_stdout(io.StringIO()) as ok:
+            self.assertEqual(main(["check", "jalike:jslike(assign,block)", "--no-eval"]), 0)
+        self.assertIn("OK", ok.getvalue())
+
+    def test_eval_needs_a_model(self):
+        import io
+        from contextlib import redirect_stderr
+        with redirect_stderr(io.StringIO()):
+            self.assertEqual(main(["eval", "jalike"]), 1)
 
 
 if __name__ == "__main__":

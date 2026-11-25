@@ -86,12 +86,28 @@ def build_conv_parser() -> argparse.ArgumentParser:
     return ap
 
 
+SUBCOMMANDS_HELP = """サブコマンド（kolang SUBCOMMAND -h で詳しい使い方）:
+  conv FILE -t SYNTAX      シンタックスを変換する（-t なしは構文チェックだけ）
+  run FILE [-f SYNTAX]     プログラムを実行する
+  show_snippet SYNTAX      スニペット（カスケード検査用の AST）をそのシンタックスで表示する
+  show_ebnf SYNTAX         そのシンタックスの記号で書いた BNF を表示する
+  check SYNTAX             区切りの衝突（カスケード）の検査と、kolangeval.jsonl の正解（pylike）の変換 → doctest（pass@1）
+  eval SYNTAX --model M    モデルに kolangeval.jsonl の問題を解かせて採点する
+  pass@1 FILE.ko...        .ko と同名の .doctest を実行して pass@1 を出す
+  cov FILE.ko...           構文と標準ライブラリ関数の使用回数を数える
+  modelppl SYNTAX...       シンタックスと LLM の親和度（PPL）を測る
+
+シンタックスは、名前（kolang --list に出るもの）か、JSON ファイルのパス、
+カスケード（jalike:jslike(assign,block)）で指定する。"""
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
         prog="kolang",
         description="kolang（こ言語）: 書き方（シンタックス）を選べる言語。"
                     "書き方の表示と、シンタックス間の変換ができる。",
-        epilog="スニペットの表示は `kolang show_snippet SYNTAX`、BNF は `kolang show_ebnf SYNTAX`。変換は `kolang conv FILE -t SYNTAX`（kolang conv -h）、実行は `kolang run FILE [-f SYNTAX]`（kolang run -h）。\nシンタックスは、名前（kolang --list に出るもの）か、JSON ファイルのパスで指定する。",
+        epilog=SUBCOMMANDS_HELP,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     ap.add_argument("--list", action="store_true", help="使えるシンタックスの一覧を表示する")
     ap.add_argument("--show", metavar="SYNTAX", help="シンタックスの書き方の例を表示する")
@@ -300,8 +316,8 @@ def cov_command(args: argparse.Namespace) -> int:
 def build_eval_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
         prog="kolang eval",
-        description="kolangeval.jsonl の各問の正解コード（pylike）を SYNTAX に変換し、読み直して、"
-                    "doctest で動作を確かめる。pass@1（合格した問題の割合）を出す。",
+        description="モデル（--model）に kolangeval.jsonl の各問の prompt を渡してコードを生成し、"
+                    "doctest で採点する。pass@1（合格した問題の割合）を出す。正解コードの変換は `kolang check`。",
         epilog="終了コード: 0 すべて合格 / 1 不合格がある / 2 使い方の誤り。",
     )
     ap.add_argument("syntax", metavar="SYNTAX", help="名前、JSON のパス、カスケード（jalike:jslike(assign,block)）")
@@ -319,9 +335,9 @@ def build_eval_parser() -> argparse.ArgumentParser:
     return ap
 
 
-def eval_command(args: argparse.Namespace) -> int:
-    from .kolangeval import DEFAULT_FILE, evaluate, load_problems
-    syn = load(args.syntax)
+def select_problems(args: argparse.Namespace) -> list:
+    """-i / -t / -d で絞った評価問題（kolang check / eval）。"""
+    from .kolangeval import DEFAULT_FILE, load_problems
     problems = load_problems(args.input or DEFAULT_FILE)
     if args.difficulty:
         problems = [p for p in problems if p.get("difficulty") in args.difficulty]
@@ -332,11 +348,53 @@ def eval_command(args: argparse.Namespace) -> int:
         problems = [p for p in problems if p["task_id"] in wanted]
         if not problems:
             raise CliError(f"問題が見つかりません: {' '.join(args.task)}")
-    if args.model:
-        return eval_model_command(args, syn, problems)
-    if args.context or args.output:
-        raise CliError("--context と --output は --model と一緒に使います")
-    results = evaluate(syn, problems)
+    return problems
+
+
+def eval_command(args: argparse.Namespace) -> int:
+    if not args.model:
+        raise CliError("--model が要ります（正解コードの変換と採点は `kolang check SYNTAX`）")
+    syn = load(args.syntax)
+    return eval_model_command(args, syn, select_problems(args))
+
+
+def build_check_parser() -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(
+        prog="kolang check",
+        description="シンタックスを検査する。(1) 区切りの衝突（構造検査。カスケードは、スニペットの出力 → パースも）、"
+                    "(2) kolangeval.jsonl の各問の正解コード（pylike）を SYNTAX に変換し、読み直して、"
+                    "doctest で動作を確かめる（pass@1）。",
+        epilog="終了コード: 0 すべて合格 / 1 衝突か不合格がある / 2 使い方の誤り。",
+    )
+    ap.add_argument("syntax", metavar="SYNTAX", help="名前、JSON のパス、カスケード（jalike:jslike(assign,block)）")
+    ap.add_argument("-i", "--input", metavar="FILE", help="問題の jsonl（既定: kolang/kolangeval.jsonl）")
+    ap.add_argument("-t", "--task", metavar="ID", nargs="+",
+                    help="この問題だけ評価する（HumanEval/0 または 0）")
+    ap.add_argument("-d", "--difficulty", metavar="N", type=int, nargs="+",
+                    help="この difficulty の問題だけ評価する（1〜5）")
+    ap.add_argument("-q", "--quiet", action="store_true", help="不合格の問題だけ表示する")
+    ap.add_argument("--no-eval", action="store_true", help="区切りの衝突の検査だけ行い、問題の採点はしない")
+    return ap
+
+
+def check_command(args: argparse.Namespace) -> int:
+    from .kolangeval import evaluate
+    from .syntax import collisions, load_syntax
+    try:
+        syn = load_syntax(args.syntax, verify=False)       # 警告でなく、ここで結果を表示する
+    except FileNotFoundError:
+        raise CliError(f"シンタックスが見つかりません: {args.syntax!r}（kolang --list で一覧を表示）") from None
+    found = collisions(syn, True)                          # 単体のシンタックスも、スニペットの往復まで調べる
+    ok = not found
+    if found:
+        print(f"NG  区切りが衝突している（{syn.name}）")
+        for line in found:
+            print(f"  {line}")
+    else:
+        print(f"OK  区切りの衝突なし（{syn.name}。構造検査、スニペットの往復）")
+    if args.no_eval:
+        return 0 if ok else 1
+    results = evaluate(syn, select_problems(args))
     for r in results:
         if r.ok and args.quiet:
             continue
@@ -345,9 +403,9 @@ def eval_command(args: argparse.Namespace) -> int:
     scored = [r for r in results if not r.skipped]          # 正解がない問題は分母に入れない
     n_pass = sum(r.ok for r in scored)
     skipped = len(results) - len(scored)
-    print(f"pass@1 = {n_pass}/{len(scored)} = {n_pass / len(scored):.1%}  ({syn.name})"
+    print(f"pass@1 = {n_pass}/{len(scored)} = {n_pass / max(len(scored), 1):.1%}  ({syn.name})"
           + (f"  スキップ {skipped}" if skipped else ""))
-    return 0 if n_pass == len(scored) else 1
+    return 0 if ok and n_pass == len(scored) else 1
 
 
 def eval_model_command(args: argparse.Namespace, syn: Syntax, problems: list) -> int:
@@ -422,6 +480,8 @@ def main(argv: Optional[list] = None) -> int:
             return pass_command(build_pass_parser().parse_args(argv[1:]))
         if argv and argv[0] == "cov":
             return cov_command(build_cov_parser().parse_args(argv[1:]))
+        if argv and argv[0] == "check":
+            return check_command(build_check_parser().parse_args(argv[1:]))
         if argv and argv[0] == "eval":
             return eval_command(build_eval_parser().parse_args(argv[1:]))
         if argv and argv[0] == "modelppl":
