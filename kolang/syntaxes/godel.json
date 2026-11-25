@@ -1,0 +1,171 @@
+{
+  "name": "godel",
+  "description": "ゲーデル版。pylike のキーワード・記号を、素数のゲーデル数 `§2` `§13` … で書く（数値リテラルと区別するため `§` を付ける）。同じ字面は同じ数。ブロックはインデント。",
+  "layout": "indent",
+  "space": " +",
+  "word_segment": "[A-Za-z0-9_]",
+  "stdlib": {
+    "print": "print",
+    "add": "add",
+    "sub": "sub",
+    "mul": "mul",
+    "div": "div",
+    "mod": "mod",
+    "pow": "pow",
+    "int": "int",
+    "str": "str",
+    "float": "float",
+    "bool": "bool"
+  },
+  "tokens": {
+    "comment": {
+      "begin": "§127",
+      "end": "(?=\\n)|\\Z"
+    },
+    "block": {
+      "begin": "@INDENT",
+      "sep": "@NEWLINE",
+      "end": "@DEDENT"
+    },
+    "assign": {
+      "begin": "",
+      "op": "§2",
+      "op.emit": " §2 ",
+      "end": ""
+    },
+    "append": {
+      "begin": "",
+      "sep": "§3",
+      "sep.emit": " §3 ",
+      "end": "§5",
+      "end.emit": " §5"
+    },
+    "inc": {
+      "begin": "",
+      "end": "§7",
+      "end.emit": " §7"
+    },
+    "dec": {
+      "begin": "",
+      "end": "§11",
+      "end.emit": " §11"
+    },
+    "if": {
+      "begin": "§13",
+      "begin.emit": "§13 ",
+      "then": "§17",
+      "then.emit": " §17",
+      "end": ""
+    },
+    "else": {
+      "begin": "§43",
+      "end": ""
+    },
+    "repeat": {
+      "begin": "§47",
+      "begin.emit": "§47 ",
+      "do": "§53",
+      "do.emit": " §53",
+      "end": ""
+    },
+    "break": "§59",
+    "def": {
+      "begin": "§61",
+      "begin.emit": "§61 ",
+      "name_end": "§67",
+      "name_end.emit": " §67 ",
+      "end": ""
+    },
+    "params": {
+      "begin": "",
+      "end": "§53",
+      "end.emit": " §53"
+    },
+    "param": {
+      "sep": "§97|(?=§53)",
+      "sep.emit": " §97 "
+    },
+    "return": {
+      "begin": "§71",
+      "begin.emit": "§71 ",
+      "end": ""
+    },
+    "true": "§73",
+    "false": "§79",
+    "none": "§83",
+    "list": {
+      "begin": "§89",
+      "begin.emit": "§89 ",
+      "sep": "§97|(?=§101)",
+      "sep.emit": " §97 ",
+      "end": "§101",
+      "end.emit": " §101"
+    },
+    "neg": {
+      "begin": "§103",
+      "begin.emit": "§103 ",
+      "end": ""
+    },
+    "index": {
+      "begin": "§107",
+      "begin.emit": "§107 ",
+      "end": "§109",
+      "end.emit": " §109"
+    },
+    "funcapp": {
+      "begin": "",
+      "name_end": "§67",
+      "name_end.emit": " §67 ",
+      "end": "§5",
+      "end.emit": " §5",
+      "arg_sep": "§97|(?=§5(?![0-9]))",
+      "arg_sep.emit": " §97 "
+    },
+    "ne": {
+      "begin": "",
+      "sep": "§19",
+      "sep.emit": " §19 ",
+      "end": ""
+    },
+    "lt": {
+      "begin": "",
+      "sep": "§23",
+      "sep.emit": " §23 ",
+      "end": ""
+    },
+    "gt": {
+      "begin": "",
+      "sep": "§29",
+      "sep.emit": " §29 ",
+      "end": ""
+    },
+    "le": {
+      "begin": "",
+      "sep": "§31",
+      "sep.emit": " §31 ",
+      "end": ""
+    },
+    "ge": {
+      "begin": "",
+      "sep": "§37",
+      "sep.emit": " §37 ",
+      "end": ""
+    },
+    "eq": {
+      "begin": "",
+      "sep": "§41",
+      "sep.emit": " §41 ",
+      "end": ""
+    }
+  },
+  "lexical": {
+    "letters": "[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*",
+    "number": "[0-9]+(?:\\.[0-9]+)?",
+    "string": "\"(?:[^\"\\\\\\n]|\\\\.)*\"|'(?:[^'\\\\\\n]|\\\\.)*'",
+    "quote": {
+      "begin": "_",
+      "end": "_"
+    },
+    "characters": "[^_\\n]+"
+  }
+}
