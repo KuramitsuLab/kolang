@@ -15,7 +15,7 @@ kolang（こ言語）の作業メモ。続きを始めるときは、まずこ�
 ## 作業ルール
 
 - 応答とドキュメントは**日本語**。コード中のコメントも日本語。
-- テスト: `python3 -m unittest discover -s tests -t .`（現在 319 件、すべて通る。2 件はスキップ）。変更したら必ず実行する。
+- テスト: `python3 -m unittest discover -s tests -t .`（現在 323 件、すべて通る。2 件はスキップ）。変更したら必ず実行する。
 - git リポジトリ。リモートは https://github.com/KuramitsuLab/kolang（public、ブランチ `main`）。HumanEval 系（`humaneval/` `humaneval_gen/` `humaneval.jsonl` `humaneval.md` `pyhumaneval*`）は、いったん公開しないので `.gitignore` に入れてある（手元には残す。履歴からも消した）。コミットや push はユーザーに頼まれたときだけ行う（公開されるので、push の前に確認する）。
 - `kolang` コマンドは、ユーザーの環境にはインストールしていない（`pip install -e .` は未実行）。動作確認は、スクラッチパッドの venv か `python3 -m kolang` で行った。
 - `kolang modelppl` は torch / transformers と HF モデル（既定 `Qwen/Qwen2.5-Coder-1.5B-Instruct`、キャッシュ済み）が要る。実測は約 1 分。`modelppl.csv` はプロジェクト直下に置いてあり、実行すると上書きされる。テストの `test_modelppl` は偽の採点関数なのでモデル不要（表が標準出力に出る）。
@@ -55,7 +55,7 @@ kolang/
   ebnf.py         show_ebnf(syntax): kolang.md の規則を、そのシンタックスの記号で書いた BNF（`kolang show_ebnf`）
   doctestexpr.py  doctest の式（全シンタックスで pylike の `f(x, y)` か変数）の読み書きと、標準関数の名前の書き換え（localize / delocalize）
   examples.py     --show の例（Python 風の例を対象シンタックスへ変換して表示）
-  syntaxes/       pylike.json / jalike.json / lisplike.json / jslike.json / pslike.json（PostScript 風。後置記法）/ ainu.json（アイヌ語ふう・カタカナ。草稿。基本語彙以外は作語で話者の確認が要る。標準関数は print（ヌカレ）だけ改名）/ manyo.json（万葉仮名。kobun の語を音仮名の漢字にしたもの）/ kobun.json（古文帳。歴史的仮名遣い。assign は target_first、append と funcapp は value_first / args_first） / kansai.json（関西弁。ほな〜おしまい。assign は value_first、funcapp は args_first `(a, b)をgcdにやらしたやつ`）/ okinawa.json（沖縄語ふう。草稿で、語彙は話者の確認が要る。名前を `ん` で終えない = 助詞 `んかい` と続くため）
+  syntaxes/       pylike.json / jalike.json / lisplike.json / jslike.json / pslike.json（PostScript 風。後置記法）/ ainu.json（アイヌ語ふう・カタカナ。草稿。基本語彙以外は作語で話者の確認が要る。標準関数は print（ヌカレ）だけ改名）/ manyo.json（万葉仮名。kobun の語を音仮名の漢字にしたもの）/ kobun.json（古文帳。歴史的仮名遣い。assign は target_first、append と funcapp は value_first / args_first） / kansai.json（関西弁。ほな〜おしまい。assign は value_first、funcapp は args_first `(a, b)をgcdにやらしたやつ`）/ okinawa.json（沖縄語ふう。草稿で、語彙は話者の確認が要る。名前を `ん` で終えない = 助詞 `んかい` と続くため） / jagal.json（ギャル語。indent レイアウト。`ワンチャン〜だったらさ`、`1をxにしちゃう`、`(a, b)をgcdにお願いしたやつ`）
 lib/              kolang で定義した関数（join split slice sort any all など 22 個）。lib/NAME.ko + lib/NAME.doctest。標準ライブラリに足さず、kolang で書けるものはここに置く（リストを縮める pop / remove / clear は、使われないので標準ライブラリにも持たない）。`kolang pass@1 lib/*.ko`、`tests/test_lib.py`（Python のメソッドとの差分テスト）。import のしくみはなく、使う側が定義を先頭にコピーする（HumanEval の .ko は、変換時に取り込む）。ASCII だけ・index は見つからないと -1 などの違いは `humaneval.md`
 tests/            test_lib / test_modelppl / test_kofile / test_pylike / test_jalike / test_convert / test_comments / test_lisp / test_js / test_cascade / test_pyeval / test_doctest / test_stdlib / test_rename / test_cli / test_cascade_matrix / test_neg / test_structure / test_ps
 ```

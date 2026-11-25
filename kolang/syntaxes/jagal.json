@@ -1,0 +1,164 @@
+{
+  "name": "jagal",
+  "description": "ギャル語。ブロックはインデント（pylike と同じ）。名前は英数字。",
+  "layout": "indent",
+  "space": " +",
+  "word_segment": "[A-Za-z0-9_]",
+  "tokens": {
+    "comment": {
+      "begin": "ちな、",
+      "end": "(?=\\n)|\\Z"
+    },
+    "block": {
+      "begin": "@INDENT",
+      "sep": "@NEWLINE",
+      "end": "@DEDENT"
+    },
+    "assign": {
+      "begin": "",
+      "op": "を",
+      "end": "にしちゃう",
+      "order": "value_first"
+    },
+    "append": {
+      "begin": "",
+      "sep": "を",
+      "end": "にポイ",
+      "order": "value_first"
+    },
+    "inc": {
+      "begin": "",
+      "end": "をアゲる"
+    },
+    "dec": {
+      "begin": "",
+      "end": "をサゲる"
+    },
+    "if": {
+      "begin": "ワンチャン",
+      "then": "だったらさ",
+      "end": ""
+    },
+    "ne": {
+      "begin": "",
+      "sep": "が",
+      "end": "とガチでちがう"
+    },
+    "lt": {
+      "begin": "",
+      "sep": "が",
+      "end": "よりちっちゃい"
+    },
+    "gt": {
+      "begin": "",
+      "sep": "が",
+      "end": "よりおっきい"
+    },
+    "le": {
+      "begin": "",
+      "sep": "が",
+      "end": "以下"
+    },
+    "ge": {
+      "begin": "",
+      "sep": "が",
+      "end": "以上"
+    },
+    "eq": {
+      "begin": "",
+      "sep": "が",
+      "end": "とそれな"
+    },
+    "else": {
+      "begin": "それ以外はー",
+      "end": ""
+    },
+    "repeat": {
+      "begin": "",
+      "do": "回ガチでリピる",
+      "end": ""
+    },
+    "break": "もーむり",
+    "def": {
+      "begin": "マイルール",
+      "begin.emit": "マイルール ",
+      "name_end": "\\(",
+      "end": ""
+    },
+    "params": {
+      "begin": "",
+      "end": "\\)ってゆーのは"
+    },
+    "param": {
+      "sep": ",|(?=\\))",
+      "sep.emit": ", "
+    },
+    "return": {
+      "begin": "",
+      "end": "をガチでお返し"
+    },
+    "true": "エモい",
+    "false": "ぴえん",
+    "none": "なんもない",
+    "list": {
+      "begin": "\\[",
+      "sep": ",|(?=\\])",
+      "sep.emit": ", ",
+      "end": "\\]"
+    },
+    "grouping": {
+      "begin": "\\(",
+      "end": "\\)"
+    },
+    "neg": {
+      "begin": "-",
+      "end": ""
+    },
+    "index": {
+      "begin": "の\\(",
+      "end": "\\)ばんめ"
+    },
+    "funcapp": {
+      "order": "args_first",
+      "begin": "\\(",
+      "name_end": "\\)を",
+      "end": "にお願いしたやつ",
+      "arg_sep": ",|(?=\\))",
+      "arg_sep.emit": ", "
+    }
+  },
+  "stdlib": {
+    "print": "みせる",
+    "abs": "ぜったいち",
+    "bool": "マジかどうか",
+    "chr": "ひともじ",
+    "float": "しょーすー",
+    "int": "せーすー",
+    "len": "なが",
+    "list": "れつ",
+    "max": "いちばんおっきい",
+    "min": "いちばんちっちゃい",
+    "ord": "もじのばんごー",
+    "range": "はんい",
+    "round": "まるめ",
+    "sorted": "ならべかえ",
+    "str": "もじれつ",
+    "sum": "ぜんぶたす",
+    "add": "たす",
+    "sub": "ひく",
+    "mul": "かける",
+    "div": "わる",
+    "mod": "あまり",
+    "pow": "ぱわー"
+  },
+  "lexical": {
+    "letters": "[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*",
+    "number": "[0-9]+(?:\\.[0-9]+)?",
+    "string": "\"(?:[^\"\\\\\\n]|\\\\.)*\"|'(?:[^'\\\\\\n]|\\\\.)*'",
+    "quote": {
+      "begin": "_",
+      "end": "_"
+    },
+    "characters": "[^_\\n]+"
+  }
+}
