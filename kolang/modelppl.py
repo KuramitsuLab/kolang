@@ -32,7 +32,7 @@ from dataclasses import dataclass, asdict
 from typing import Callable, Optional, Sequence
 
 from .snippet import SNIPPETS
-from .syntax import load_syntax
+from .syntax import SYNTAX_DIR, load_syntax
 from .unparser import unparse
 
 DEFAULT_SYNTAXES = ("pylike", "jalike", "lisplike", "jslike")
@@ -187,11 +187,20 @@ def write_csv(path: str, model: str, summary: Sequence[dict]) -> None:
             w.writerow([row.get(c, "") for c in CSV_COLUMNS])
 
 
+def expand_all(specs: Sequence[str]) -> "list[str]":
+    """`all` を、syntaxes/ の全シンタックス（名前順）に置き換える。重複は落とす。"""
+    out: "list[str]" = []
+    for spec in specs:
+        out += [p.stem for p in sorted(SYNTAX_DIR.glob("*.json"))] if spec == "all" else [spec]
+    return list(dict.fromkeys(out))
+
+
 def main(argv: Optional[Sequence[str]] = None, scorer: Optional[Scorer] = None,
          prog: str = "modelppl") -> int:
     ap = argparse.ArgumentParser(prog=prog, description="シンタックスごとの LLM パープレキシティを測る")
     ap.add_argument("syntaxes", nargs="*", metavar="SYNTAX",
-                    help="シンタックス名（カスケード可: jalike:jslike(assign)）。複数なら全部で出力できたスニペットだけで比べる")
+                    help="シンタックス名（カスケード可: jalike:jslike(assign)）。複数なら全部で出力できたスニペットだけで比べる。"
+                         "`all` は syntaxes/ の全シンタックス")
     ap.add_argument("--csv", default=CSV_DEFAULT, metavar="FILE",
                     help=f"結果の CSV（既定 {CSV_DEFAULT}。列は {', '.join(CSV_COLUMNS)}）。(model, syntax) の行を置き換え、なければ足す")
     ap.add_argument("--no-csv", action="store_true", help="CSV に書かない")
@@ -207,7 +216,7 @@ def main(argv: Optional[Sequence[str]] = None, scorer: Optional[Scorer] = None,
         print("\n".join(SNIPPETS))
         return 0
     names = args.snippets.split(",") if args.snippets else None
-    syntaxes = list(dict.fromkeys(args.syntaxes))
+    syntaxes = expand_all(args.syntaxes)
     if not syntaxes:
         print("エラー: SYNTAX を指定する（例: kolang modelppl pylike jalike）", file=sys.stderr)
         return 2

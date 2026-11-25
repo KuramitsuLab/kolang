@@ -12,7 +12,7 @@
     kolang pass@1 humaneval/*.ko           .ko と .doctest を実行して pass@1 を計算する（--total 164 で分母を指定）
     kolang eval SYNTAX [-i FILE]           kolangeval.jsonl の正解（pylike）を SYNTAX に変換し、doctest で動作を確かめる
                                            （--model NAME [--context FILE] [-o OUT.jsonl] でモデルの生成を採点）
-    kolang modelppl SYNTAX... [--model M]  シンタックスと LLM の親和度（NLL / PPL）。modelppl.csv に記録
+    kolang modelppl SYNTAX|all... [--model M]  シンタックスと LLM の親和度（NLL / PPL）。modelppl.csv に記録
     kolang run prog.py [-f pylike]         実行する（Python 互換。doctest 風の例は答え合わせ）
 """
 
@@ -95,7 +95,7 @@ SUBCOMMANDS_HELP = """サブコマンド（kolang SUBCOMMAND -h で詳しい使�
   eval SYNTAX --model M    モデルに kolangeval.jsonl の問題を解かせて採点する
   pass@1 FILE.ko...        .ko と同名の .doctest を実行して pass@1 を出す
   cov FILE.ko...           構文と標準ライブラリ関数の使用回数を数える
-  modelppl SYNTAX...       シンタックスと LLM の親和度（PPL）を測る
+  modelppl SYNTAX...       シンタックスと LLM の親和度（PPL）を測る（all で全シンタックス）
 
 シンタックスは、名前（kolang --list に出るもの）か、JSON ファイルのパス、
 カスケード（jalike:jslike(assign,block)）で指定する。"""

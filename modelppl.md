@@ -12,6 +12,7 @@
 
 ```
 kolang modelppl pylike jalike lisplike jslike   # 4 つのシンタックスを既定モデルで測る
+kolang modelppl all                             # syntaxes/ の全シンタックス（名前順に展開。他の指定と併用も可）
 kolang modelppl pylike "jalike:jslike(assign)"  # カスケードも可
 kolang modelppl -m allenai/OLMo-2-0425-1B pylike  # モデルを変える（--model）
 kolang modelppl pylike --snippets assign,index --show  # 一部のスニペットだけ。出力したコードも表示

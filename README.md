@@ -47,7 +47,7 @@ kolang run [-f SYNTAX]             ファイルなしで端末から起動する
 kolang cov examples/*.ko           構文（AST のノード）と標準ライブラリ関数の使用回数を数える
 kolang check SYNTAX [-t ID...] [-d N...] [-q] [--no-eval]  区切りの衝突（カスケード）の検査と、評価問題（kolangeval.jsonl）の正解を SYNTAX に変換して doctest で確かめる
 kolang eval SYNTAX --model NAME [--context FILE] [-o OUT.jsonl]  モデルにコードを生成させて採点（結果は jsonl）
-kolang modelppl SYNTAX... [-m MODEL] シンタックスと LLM の親和度を測り、modelppl.csv に書く
+kolang modelppl SYNTAX|all... [-m MODEL] シンタックスと LLM の親和度を測り、modelppl.csv に書く
 ```
 
 - シンタックスは、名前（`--list` に出るもの）、JSON ファイルのパス、またはカスケード（後述）で指定します。`python -m kolang ...` でも同じです。
@@ -61,7 +61,7 @@ kolang modelppl SYNTAX... [-m MODEL] シンタックスと LLM の親和度を�
 - `kolang eval SYNTAX --model NAME` は、モデルに評価問題を解かせて採点します（`--model` が必須。`-i` `-t` `-d` は `check` と同じ）。Python からは `kolang.kolangeval` の `evaluate(syntax, problems, solver)` で、`solver(problem, syntax) -> code` を差し替えると、変換の代わりにモデルが生成したコードを採点できます。
 
   `--model NAME`（Hugging Face のモデル。torch / transformers が要る。`claude-` で始まる名前は Anthropic API で呼ぶ。`ANTHROPIC_API_KEY` が要り、`claude-haiku-5.5` のように `.` で書いても `claude-haiku-5-5` として扱う。Claude には書き出しの固定を assistant の prefill でなくユーザーメッセージの指示で渡し、temperature は指定しない）を付けると、正解の変換の代わりに、モデルに各問の `prompt` を渡してコードを生成させ、同じ採点をします。システムメッセージに入れる言語の説明は `--context FILE`（中身をそのまま使う）で、なければ `kolang/examples/*.ko` を SYNTAX に変換して並べたものです。`--context snippet` なら、その並びに続けて `snippet.SNIPPETS`（構文ごとの小さな例。`kolang show_snippet` と同じもの。SYNTAX で書けないものは省く）も並べます。`--context none` なら何も足さず（空のコンテキスト。システムメッセージなし）、`--context ebnf` なら `kolang show_ebnf SYNTAX` の BNF を並べ、`--context snippet,ebnf` で両方です。生成は貪欲（`do_sample=False`、最大 1024 トークン）で、出力の ``` で囲まれたコードを取り出します。結果は 1 問 1 行の jsonl（`task_id` `model` `syntax` `prompt` `output`（モデルの生の出力）`input_tokens`（入力。チャットテンプレートと書き出しを含む）`output_tokens`（新しく生成した分）`code`（取り出したコード）`doctest`（`ok` `passed` `total`）`error_message`（失敗の理由。なければ null））で、`-o FILE`（既定は `results/kolangeval_<syntax>_<model>.jsonl`（`results/` は自動で作る。`-d 1` なら `_d1`、`-d 1 3` なら `_d1_3` が付く）。英数字と `.` `_` `-` 以外は `_` にする。`-o -` なら標準出力）に出し、pass@1 の要約は標準エラーに出ます。`--context` と `-o` は `--model` のときだけ使えます。
-- `kolang modelppl SYNTAX...` は、指定したシンタックスの `NLL, tokens, PPL, bpc` を計算し、`modelppl.csv`（列は `model, syntax, NLL, tokens, PPL, bpc`）に書きます。既定のモデルは `Qwen/Qwen2.5-Coder-1.5B-Instruct`（`--model` で変更）。詳しくは [modelppl.md](modelppl.md)。
+- `kolang modelppl SYNTAX...` は（`all` で組み込みの全シンタックス）、指定したシンタックスの `NLL, tokens, PPL, bpc` を計算し、`modelppl.csv`（列は `model, syntax, NLL, tokens, PPL, bpc`）に書きます。既定のモデルは `Qwen/Qwen2.5-Coder-1.5B-Instruct`（`--model` で変更）。詳しくは [modelppl.md](modelppl.md)。
 - `kolang run` の終了コードは、0 が成功、1 が実行時エラーか doctest の不一致、2 が使い方の誤りです。
 
 ## 実行する
@@ -158,6 +158,20 @@ interp = run("x = add(1, 2)\n>>> x\n3\n")              # 実行。interp.globals
 | `jalike` | 日本語風。ブロックは `『 』`。名前は英数字、漢字などは `_` で囲む（`_合計_`） |
 | `lisplike` | Lisp 風。S 式。配列の添字は `(get x i)` |
 | `jslike` | JavaScript 風。`{ }` と `;`（省略可）、`xs.push(1)`、`x++`、`function`。最上位は括らない |
+| `pslike` | PostScript 風。後置記法 |
+| `kobun` | 古文帳。歴史的仮名遣い。平安のかな文学ふう |
+| `manyo` | 万葉仮名。kobun の語を音仮名の漢字で書く |
+| `kansai` | 関西弁。`ほな〜おしまい` |
+| `jagal` | ギャル語。インデントでブロックを表す |
+| `ainu` | アイヌ語ふう（カタカナ）。草稿で、語彙は話者の確認が要る |
+| `okinawa` | 沖縄語ふう。草稿で、語彙は話者の確認が要る |
+| `enlike` | 英語版。インデント。`set x to 1`、`if x is less than 3:`、`repeat 3 times:` |
+| `latin` | ラテン語版。インデント、ASCII のみ。`pone 1 in x`、`si x est minor quam 3:`。語彙は話者の確認が要る |
+| `mathlike` | 数学記号版。キーワードも標準関数名も記号だけ。`x ← 1`、`⊢ x < 3 ⇒`、`≝ f(a, b) ⇒` |
+| `godel` | ゲーデル版。pylike のトークンを素数のゲーデル数で書く。`§2`（`=`）、`§13`（`if`） |
+| `cobollike` | COBOL 風。大文字の英語、文はピリオドで終える。`MOVE 1 TO x.`、`END-IF.` |
+
+一覧と説明は `kolang --list` でも見られます。
 
 ## 言語の骨格
 
@@ -170,7 +184,7 @@ interp = run("x = add(1, 2)\n>>> x\n3\n")              # 実行。interp.globals
 
 ## シンタックスを作る
 
-`kolang/syntaxes/` に JSON を置きます（または JSON のパスを直接指定します）。`pylike.json`、`jalike.json`、`lisplike.json`、`jslike.json`、`pslike.json`、`kobun.json`（古文帳。平安のかな文学ふう）、`manyo.json`（万葉仮名。音を漢字で書く）、`ainu.json`（アイヌ語ふう。草稿）が実例です。全キーの詳しい書き方は [syntax.md](syntax.md) にあります。
+`kolang/syntaxes/` に JSON を置きます（または JSON のパスを直接指定します）。上の表のシンタックスが実例です（まず `pylike.json`、indent なら `enlike.json`、none なら `jslike.json` や `cobollike.json` が読みやすい）。全キーの詳しい書き方は [syntax.md](syntax.md) にあります。
 
 ```jsonc
 {

@@ -15,7 +15,7 @@ kolang（こ言語）の作業メモ。続きを始めるときは、まずこ�
 ## 作業ルール
 
 - 応答とドキュメントは**日本語**。コード中のコメントも日本語。
-- テスト: `python3 -m unittest discover -s tests -t .`（現在 343 件、すべて通る。2 件はスキップ）。変更したら必ず実行する。
+- テスト: `python3 -m unittest discover -s tests -t .`（現在 344 件、すべて通る。2 件はスキップ）。変更したら必ず実行する。
 - git リポジトリ。リモートは https://github.com/KuramitsuLab/kolang（public、ブランチ `main`）。HumanEval 系（`humaneval/` `humaneval_gen/` `humaneval.jsonl` `humaneval.md` `pyhumaneval*`）は、いったん公開しないので `.gitignore` に入れてある（手元には残す。履歴からも消した）。コミットや push はユーザーに頼まれたときだけ行う（公開されるので、push の前に確認する）。
 - `kolang` コマンドは、ユーザーの環境にはインストールしていない（`pip install -e .` は未実行）。動作確認は、スクラッチパッドの venv か `python3 -m kolang` で行った。
 - `kolang modelppl` は torch / transformers と HF モデル（既定 `Qwen/Qwen2.5-Coder-1.5B-Instruct`、キャッシュ済み）が要る。実測は約 1 分。`modelppl.csv` はプロジェクト直下に置いてあり、実行すると上書きされる。テストの `test_modelppl` は偽の採点関数なのでモデル不要（表が標準出力に出る）。
@@ -50,7 +50,7 @@ kolang/
   repl.py         `kolang run` の対話モード。1 行ずつ読んで、読めたら実行（変数は持ち越す）。読めなければ `... ` で続きを待つ（空行で打ち切り、構文エラーを表示）。indent は複合文を空行まで待つ
   cov.py          `kolang cov`。AST のノード（Compare は演算子ごと）と標準ライブラリ関数の使用回数
   kolangeval.py   `kolang check` / `kolang eval --model`。隣の kolangeval.jsonl（問題 164 問。`__file__` から読む）の pylike の正解を変換 → 読み直し → doctest。pylike のない問題はスキップして分母に入れない。Solver を差し替えるとモデルの生成も採点できる。`--model NAME [--context FILE] [-o OUT.jsonl]` は `make_claude_generator`（`--model claude-…`。Anthropic API。新しいモデルは prefill が 400 なので書き出しはユーザーメッセージの指示。`.` は `-` にする。トークン数は usage、キャッシュ分を含む）/ `make_hf_generator`（HF のチャットテンプレート、context = system、prompt = user、貪欲。返答の書き出し = ``` と `entry_header`（正解の entry_point の関数定義の、本体より前）を先に置いて続きを生成）で生の出力を得る → `extract_code` → `evaluate_recorded` が 1 問 1 行の jsonl（出力先の既定は `default_output_name` = `results/kolangeval_<syntax>_<model>[_d<N>].jsonl`（`-d` の指定は `_d1` / `_d1_3`）、`-o -` で標準出力）（task_id / model / syntax / prompt / output / input_tokens / output_tokens（`Generation`: str にトークン数を添える。ただの str なら null）/ code / doctest{ok,passed,total} / error_message）を出す。context は `build_context`（FILE そのまま、なければ `kolang/examples/*.ko` を SYNTAX に変換）。examples は package-data に入れてある
-  modelppl.py     シンタックスと LLM の親和度。SNIPPETS を各シンタックスで出力 → HF モデルで NLL / PPL / bpc。`kolang modelppl`（`python3 -m kolang.modelppl` も可）。`kolang modelppl SYNTAX... [--model M]` が `modelppl.csv`（列 model, syntax, NLL, tokens, PPL, bpc。(model, syntax) で置き換え・追記）に書く。説明は `modelppl.md`。torch・transformers は遅延 import。テストは偽の採点関数
+  modelppl.py     シンタックスと LLM の親和度。SNIPPETS を各シンタックスで出力 → HF モデルで NLL / PPL / bpc。`kolang modelppl`（`python3 -m kolang.modelppl` も可）。`kolang modelppl SYNTAX... [--model M]`（`all` は syntaxes/ の全シンタックスに展開。`expand_all`）が `modelppl.csv`（列 model, syntax, NLL, tokens, PPL, bpc。(model, syntax) で置き換え・追記）に書く。説明は `modelppl.md`。torch・transformers は遅延 import。テストは偽の採点関数
   kofile.py       .ko ファイル（1 行目 ```シンタックス 〜 閉じの ``` までがコード）。split_ko / join_ko / map_blocks（文書中の全ブロックを書き換える）
   ebnf.py         show_ebnf(syntax): kolang.md の規則を、そのシンタックスの記号で書いた BNF（`kolang show_ebnf`）
   doctestexpr.py  doctest の式（全シンタックスで pylike の `f(x, y)` か変数）の読み書きと、標準関数の名前の書き換え（localize / delocalize）

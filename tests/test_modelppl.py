@@ -47,6 +47,15 @@ class TestModelPpl(unittest.TestCase):
         with open(path, encoding="utf-8", newline="") as f:
             return list(csv.DictReader(f))
 
+    def test_all_expands_to_every_syntax(self):
+        from kolang.modelppl import expand_all
+        names = expand_all(["all"])
+        self.assertIn("pylike", names)
+        self.assertIn("cobollike", names)
+        self.assertEqual(expand_all(["jalike", "all"])[0], "jalike")
+        self.assertEqual(len(names), len(set(names)))
+        self.assertEqual(main(["--no-csv", "all", "--snippets", "assign"], scorer=fake_scorer), 0)
+
     def test_csv_columns_and_upsert(self):
         with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, "modelppl.csv")
