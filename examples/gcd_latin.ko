@@ -1,0 +1,14 @@
+```latin
+nota: 互除法で最大公約数を求める（while がないので、十分大きい回数の for と break で書く）
+munus gcd(a, b):
+    itera adde(a, b) vices:
+        si b est aequalis 0:
+            frange
+        pone reliquum(a, b) in t
+        pone b in a
+        pone t in b
+    redde a
+scribe(gcd(48, 18))
+scribe(gcd(17, 5))
+scribe(gcd(0, 7))
+```
