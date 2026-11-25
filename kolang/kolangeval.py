@@ -65,14 +65,27 @@ def build_context(syntax: Syntax, path: Optional[str] = None) -> str:
     """モデルに渡す言語の説明（コンテキスト）。
 
     path があればその中身をそのまま使う。なければ `kolang/examples/*.ko` を syntax に変換して並べる。
+    path が `snippet`（同名のファイルがないとき）なら、examples に続けて `snippet.SNIPPETS` も並べる
+    （そのシンタックスで書けないスニペットは省く）。
     """
-    if path:
+    with_snippets = path == "snippet" and not Path(path).exists()
+    if path and not with_snippets:
         return Path(path).read_text(encoding="utf-8")
     from .kofile import join_ko, split_ko
     parts = ["以下は kolang のコードの例です。同じ書き方でコードを書いてください。"]
     for f in sorted(EXAMPLES_DIR.glob("*.ko")):
         spec, code = split_ko(f.read_text(encoding="utf-8"))
         parts.append(f"# {f.name}\n" + join_ko(syntax.name, convert(code, spec, syntax)).rstrip())
+    if with_snippets:
+        from .snippet import SNIPPETS
+        from .unparser import UnparseError, unparse
+        parts.append("以下は、構文ごとの小さな例です。")
+        for label, tree in SNIPPETS.items():
+            try:
+                text = unparse(tree, syntax)
+            except UnparseError:
+                continue
+            parts.append(f"# snippet: {label}\n" + join_ko(syntax.name, text).rstrip())
     return "\n\n".join(parts)
 
 

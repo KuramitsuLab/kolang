@@ -40,6 +40,15 @@ class TestModelEval(unittest.TestCase):
             self.assertIn("```" + name, ctx)
             self.assertIn("fizzbuzz", ctx)
 
+    def test_context_snippet(self):
+        from kolang.kolangeval import build_context
+        from kolang.syntax import load_syntax
+        base = build_context(load_syntax("ja"))
+        ctx = build_context(load_syntax("ja"), "snippet")
+        self.assertTrue(ctx.startswith(base))
+        self.assertIn("# snippet: assign", ctx)
+        self.assertGreater(len(ctx), len(base))
+
     def test_context_file(self):
         import tempfile
         from kolang.kolangeval import build_context
