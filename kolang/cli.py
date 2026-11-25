@@ -88,7 +88,7 @@ def build_conv_parser() -> argparse.ArgumentParser:
 
 SUBCOMMANDS_HELP = """サブコマンド（kolang SUBCOMMAND -h で詳しい使い方）:
   conv FILE -t SYNTAX      シンタックスを変換する（-t なしは構文チェックだけ）
-  run FILE [-f SYNTAX]     プログラムを実行する
+  run [FILE] [-f SYNTAX]   プログラムを実行する（-c CODE で文字列から。FILE なしの端末は対話モード）
   show_snippet SYNTAX      スニペット（カスケード検査用の AST）をそのシンタックスで表示する
   show_ebnf SYNTAX         そのシンタックスの記号で書いた BNF を表示する
   check SYNTAX             区切りの衝突（カスケード）の検査と、kolangeval.jsonl の正解（pylike）の変換 → doctest（pass@1）
@@ -206,7 +206,8 @@ def build_run_parser() -> argparse.ArgumentParser:
                     "doctest 風の例（>>> 式 の次の行に JSON の答え）があれば、答え合わせをする。",
         epilog="終了コード: 0 成功 / 1 実行時エラーか doctest の不一致 / 2 使い方の誤り。",
     )
-    ap.add_argument("file", nargs="?", help="プログラム（省略すると標準入力）")
+    ap.add_argument("file", nargs="?", help="プログラム（省略すると、端末なら対話モード、パイプなら標準入力を読む）")
+    ap.add_argument("-c", "--command", metavar="CODE", help="ファイルの代わりに、このプログラムを実行する（python -c と同じ）")
     ap.add_argument("-f", "--from", dest="src", metavar="SYNTAX", default=None,
                     help="シンタックス（既定: .ko ならファイルの 1 行目、それ以外は pylike）。名前、JSON のパス、カスケード（jalike:jslike(assign,block)）")
     return ap
@@ -229,6 +230,20 @@ def load_program(path: Optional[str], spec: Optional[str]) -> tuple:
 
 def run_program(args: argparse.Namespace) -> int:
     from .pyeval import execute
+    if args.command is not None:
+        if args.file:
+            raise CliError("-c とファイルは一緒に使えません")
+        syn = load(args.src or "pylike")
+        return execute(parse(args.command, syn), syntax=syn)
+    if args.file is None and sys.stdin.isatty():       # ファイルなしで端末なら、対話モード
+        from .repl import repl
+        try:
+            import readline                            # noqa: F401  あれば行編集と履歴が効く
+        except ImportError:
+            pass
+        syn = load(args.src or "pylike")
+        print(f"kolang（{syn.name}）。終了は Ctrl-D")
+        return repl(syn)
     syn, program, then = load_program(args.file, args.src)
     return execute(program, syntax=syn, then=then)
 

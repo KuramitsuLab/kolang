@@ -105,6 +105,39 @@ class Run(unittest.TestCase):
         code, out, err = run("run", stdin="xs = [1]\nxs.append(2)\nprint(xs)\n")
         self.assertEqual((code, out, err), (0, "[1, 2]\n", ""))
 
+    def test_run_c(self):
+        self.assertEqual(run("run", "-c", "x = 2\nprint(add(x, 3))"), (0, "5\n", ""))
+        self.assertEqual(run("run", "-c", "1をxに代入\n(x)における表示の値", "-f", "jalike"), (0, "1\n", ""))
+        code, _, err = run("run", "-c", "print(y)")
+        self.assertEqual((code, err), (1, "NameError: name 'y' is not defined\n"))
+        self.assertEqual(run("run", "-c", "pass", "f.ko")[0], 1)      # -c とファイルは両立しない
+
+    def test_repl(self):
+        from kolang.repl import repl
+        from kolang.syntax import load_syntax
+
+        def session(syntax, lines):
+            it = iter(lines)
+
+            def read(prompt):
+                try:
+                    return next(it)
+                except StopIteration:
+                    raise EOFError
+            out, err = io.StringIO(), io.StringIO()
+            self.assertEqual(repl(load_syntax(syntax), read, out, err), 0)
+            return out.getvalue(), err.getvalue()
+
+        # 変数は持ち越す。if / else は空行まで待つ。エラーのあとも続く
+        out, err = session("pylike", ["x = 1", "if x == 1:", "    print('one')", "else:", "    print('other')", "",
+                                      "print(y)", "x = = 1", "", "print(add(x, 1))"])
+        self.assertEqual(out, "one\n2\n\n")
+        self.assertIn("NameError: name 'y' is not defined", err)
+        self.assertIn("SyntaxError", err)
+        # 括弧で閉じる形式（indent でない）は、閉じたらすぐ実行する
+        out, _ = session("jalike", ["1をxに代入", "もしxが1と等しいなら『", "  (x)における表示の値", "』", "(x)における表示の値"])
+        self.assertEqual(out, "1\n1\n\n")
+
     def test_run_file_and_syntax(self):
         with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, "p.txt")

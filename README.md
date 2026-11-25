@@ -42,6 +42,8 @@ kolang conv prog.py -f pylike         構文チェックだけ（-t を省略）
 kolang conv doc.md -t jalike              .md の ```pylike などのブロックを全部変換（文章はそのまま）
 kolang run prog.py [-f pylike]     実行する（ファイルなしなら標準入力）
 kolang run prog.ko                 .ko ファイルを実行する（シンタックスは 1 行目で指定）
+kolang run -c 'print(1)' [-f SYNTAX]  ファイルなしで、文字列のプログラムを実行する（python -c と同じ）
+kolang run [-f SYNTAX]             ファイルなしで端末から起動すると、対話モード（パイプなら標準入力をプログラムとして読む）
 kolang cov examples/*.ko           構文（AST のノード）と標準ライブラリ関数の使用回数を数える
 kolang check SYNTAX [-t ID...] [-d N...] [-q] [--no-eval]  区切りの衝突（カスケード）の検査と、評価問題（kolangeval.jsonl）の正解を SYNTAX に変換して doctest で確かめる
 kolang eval SYNTAX --model NAME [--context FILE] [-o OUT.jsonl]  モデルにコードを生成させて採点（結果は jsonl）
