@@ -1,5 +1,5 @@
 {
-  "name": "ja",
+  "name": "jalike",
   "description": "日本語風シンタックス。ブロックは『 』で囲む。名前は英数字とカタカナ、それ以外（漢字など）は「」で囲む。",
   "layout": "none",
   "toplevel": "bare",
@@ -9,8 +9,8 @@
   "tokens": {
     "comment": { "begin": "※", "end": "(?=\\n)|\\Z" },
     "block": { "begin": "『", "sep": "", "sep.emit": " ", "end": "』" },
-    "assign": { "begin": "", "op": "に", "end": "を代入" },
-    "append": { "begin": "", "sep": "に", "end": "を追加" },
+    "assign": { "begin": "", "op": "を", "end": "に代入", "order": "value_first" },
+    "append": { "begin": "", "sep": "を", "end": "に追加", "order": "value_first" },
     "inc": { "begin": "", "end": "を増やす" },
     "dec": { "begin": "", "end": "を減らす" },
     "if": { "begin": "もし", "then": "なら", "end": "" },
@@ -30,7 +30,7 @@
     "true": "真",
     "false": "偽",
     "none": "無",
-    "list": { "begin": "【", "sep": ",|(?=】)", "sep.emit": ", ", "end": "】" },
+    "list": { "begin": "\\[", "sep": ",|(?=\\])", "sep.emit": ", ", "end": "\\]" },
     "grouping": { "begin": "\\(", "end": "\\)" },
     "neg": { "begin": "-", "end": "" },
     "index": { "begin": "の\\(", "end": "\\)番目" },

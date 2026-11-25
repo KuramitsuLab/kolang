@@ -203,11 +203,13 @@ def make_unparser(syntax: Union[str, Path, Syntax] = "pylike",
         """文のトークン列。同じ行のコメント t は、見出し（複合文）または文の末尾に置く。"""
         t = trailing_comment(s.comments.trailing)
         if isinstance(s, K.Assign):
-            return [tok("assign_begin"), *expr(s.target), tok("assign_op"),
-                    *expr(s.value), tok("assign_end"), *t]
+            first, second = (s.value, s.target) if syn.assign == "value_first" else (s.target, s.value)
+            return [tok("assign_begin"), *expr(first), tok("assign_op"),
+                    *expr(second), tok("assign_end"), *t]
         if isinstance(s, K.Append):
-            return [tok("append_begin"), *expr(s.target), tok("append_sep"),
-                    *expr(s.value), tok("append_end"), *t]
+            first, second = (s.value, s.target) if syn.append == "value_first" else (s.target, s.value)
+            return [tok("append_begin"), *expr(first), tok("append_sep"),
+                    *expr(second), tok("append_end"), *t]
         if isinstance(s, K.Inc):
             return [tok("inc_begin"), *expr(s.target), tok("inc_end"), *t]
         if isinstance(s, K.Dec):

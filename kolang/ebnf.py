@@ -90,8 +90,10 @@ def show_ebnf(syntax: Union[str, Syntax]) -> str:
     # ---- 文 -----------------------------------------------------------------
     lines += rule(
         "statement",
-        (seq(tok("assign_begin"), V, tok("assign_op"), E, tok("assign_end")), "assignment"),
-        (seq(tok("append_begin"), E, tok("append_sep"), E, tok("append_end")), "append"),
+        (seq(tok("assign_begin"), *((E, tok("assign_op"), V) if syn.assign == "value_first" else (V, tok("assign_op"), E)),
+              tok("assign_end")), "assignment" + (" (assign: value_first)" if syn.assign == "value_first" else "")),
+        (seq(tok("append_begin"), E, tok("append_sep"), E, tok("append_end")),
+         "append" + (" (target and value swapped: append: value_first)" if syn.append == "value_first" else "")),
         (seq(tok("inc_begin"), V, tok("inc_end")), "increment"),
         (seq(tok("dec_begin"), V, tok("dec_end")), "decrement"),
         "<if>", "<repeat>", "<break>", "<funcdef>", "<return>",

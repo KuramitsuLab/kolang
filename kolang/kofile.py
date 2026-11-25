@@ -1,6 +1,6 @@
 """`.ko` ファイル: 1 行目でシンタックスを指定し、コードを ``` で囲む。
 
-    ```ja:jslike(assign)
+    ```jalike:jslike(assign)
     ...コード...
     ```
 
@@ -24,7 +24,7 @@ def split_ko(text: str) -> Tuple[str, str]:
     """`.ko` の中身を（シンタックスの指定, コード）に分ける。"""
     lines = text.lstrip("﻿").splitlines()
     if not lines or not lines[0].startswith(FENCE):
-        raise KoFileError("1 行目は ```シンタックス（例: ```ja:jslike(assign)）で始めてください")
+        raise KoFileError("1 行目は ```シンタックス（例: ```jalike:jslike(assign)）で始めてください")
     spec = lines[0][len(FENCE):].strip()
     if not spec:
         raise KoFileError("1 行目の ``` の後ろにシンタックスを書いてください")

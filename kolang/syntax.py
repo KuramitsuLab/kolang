@@ -30,6 +30,14 @@
   "args_first"         call_begin <引数,...> call_name_end <名前> call_end     (x, y)におけるfの値
                        args_first では call_name_end が引数と名前のあいだ。
 
+代入（assign）の書き方（tokens.assign.order）:
+  "target_first"（既定）  assign_begin <変数> assign_op <式> assign_end     xに1を代入
+  "value_first"         assign_begin <式> assign_op <変数> assign_end     1をxに代入
+
+追加（append）の書き方（tokens.append.order）:
+  "target_first"（既定）  append_begin <対象> append_sep <値> append_end     xsに1を追加
+  "value_first"         append_begin <値> append_sep <対象> append_end     1をxsに追加
+
 出力（unparser）用:
   emit           トークン名 → 出力する文字列。省略したトークンは、正規表現から作った例を使う。
                  空白を足して見た目を整えるために使う（正規表現にマッチする必要がある）。
@@ -75,6 +83,8 @@ class Syntax:
     emit: dict
     index: str = "postfix"         # "postfix" | "prefix"
     call: str = "func_first"       # "func_first"（f(x)）| "args_first"（(x)におけるfの値）
+    assign: str = "target_first"   # "target_first"（xに1を代入）| "value_first"（1をxに代入）
+    append: str = "target_first"   # "target_first"（xsに1を追加）| "value_first"（1をxsに追加）
     toplevel: str = "block"        # "block"（block_begin〜block_end で包む）| "bare"（文の並びだけ）
     tight_before: Optional[str] = None
     stdlib: dict = field(default_factory=dict)   # 標準ライブラリ関数の名前の変更（標準名 → このシンタックスでの名前）。JSON では "stdlib": {標準名: 名前}
@@ -99,14 +109,14 @@ class Syntax:
         return "|".join(parts)
 
 
-# カスケード（"ja:jslike(assign,block)"）で、シンタックスから取り込める単位。
+# カスケード（"jalike:jslike(assign,block)"）で、シンタックスから取り込める単位。
 # tokens: トークン名、prefix: トークン名の接頭辞、keys: トップレベルのキー、lexical: lexical のキー。
 GROUPS = {
     "comment": {"tokens": ("comment_begin", "comment_end")},
     # block は配置（layout）と一緒に読む。インデントと { } は別の配置なので。
     "block": {"prefix": ("block_",), "keys": ("layout", "toplevel")},
-    "assign": {"prefix": ("assign_",)},
-    "append": {"prefix": ("append_",)},
+    "assign": {"prefix": ("assign_",), "keys": ("assign",)},
+    "append": {"prefix": ("append_",), "keys": ("append",)},
     "inc": {"prefix": ("inc_",)},
     "dec": {"prefix": ("dec_",)},
     "if": {"prefix": ("if_",)},
@@ -150,7 +160,9 @@ def flatten_tokens(data: dict) -> dict:
             tokens[key] = value
             continue
         for sub, pattern in value.items():
-            if key == "funcapp":
+            if key in ("assign", "append") and sub == "order":
+                extra[key] = pattern           # 代入・追加の並び順は、トップの "assign" / "append"
+            elif key == "funcapp":
                 # funcapp は call_*（begin / name_end / end）と arg_sep、並び順 order（= トップの call）を 1 つにまとめた書き方
                 if sub == "order":
                     extra["call"] = pattern
@@ -216,7 +228,7 @@ def _overlay(base: dict, over: dict, groups: Optional[list], label: str) -> dict
                 out.pop(k, None)
         for k in spec.get("lexical", ()):
             out["lexical"][k] = over["lexical"][k]
-    # indent では改行が読み飛ばされるが、none では空白に改行が要る（ja・pylike のような半角・全角スペースだけの空白に足す）。
+    # indent では改行が読み飛ばされるが、none では空白に改行が要る（jalike・pylike のような半角・全角スペースだけの空白に足す）。
     if out.get("layout", "none") == "none":
         space = out.get("space", " +")
         if not re.fullmatch(f"(?:{space})+", "\n"):
@@ -232,9 +244,9 @@ def _is_path(text: str) -> bool:
 def load_syntax(source: Union[str, Path], verify: bool = True) -> Syntax:
     """名前（syntaxes/<名前>.json）、JSON ファイルのパス、またはカスケードから読み込む。
 
-    カスケード: "ja:jslike(assign,block,funcapp)" は、ja をベースに、jslike の
+    カスケード: "jalike:jslike(assign,block,funcapp)" は、jalike をベースに、jslike の
     assign / block / funcapp のグループだけを取り込む。":" でいくつでもつなげる。
-    グループを省略した "ja:jslike" は、jslike で全部置き換える（= jslike）。
+    グループを省略した "jalike:jslike" は、jslike で全部置き換える（= jslike）。
 
     検査（`verify=False` で止める）。問題があれば警告（UserWarning）を出し、読み込みは続ける。
       1. 構造検査（structure.problems）: トークンの定義だけを見て、衝突の原因を名指しする。
@@ -307,6 +319,12 @@ def syntax_from_dict(data: dict, label: str = "<dict>") -> Syntax:
     call = data.get("call", "func_first")
     if call not in ("func_first", "args_first"):
         raise ValueError(f"{label}: unknown call style {call!r}")
+    assign = data.get("assign", "target_first")
+    if assign not in ("target_first", "value_first"):
+        raise ValueError(f"{label}: unknown assign style {assign!r}")
+    append = data.get("append", "target_first")
+    if append not in ("target_first", "value_first"):
+        raise ValueError(f"{label}: unknown append style {append!r}")
     toplevel = data.get("toplevel", "block")
     if toplevel not in ("block", "bare"):
         raise ValueError(f"{label}: unknown toplevel style {toplevel!r}")
@@ -362,6 +380,8 @@ def syntax_from_dict(data: dict, label: str = "<dict>") -> Syntax:
         emit=emit,
         index=index,
         call=call,
+        assign=assign,
+        append=append,
         toplevel=toplevel,
         tight_before=tight_before,
         stdlib=stdlib,

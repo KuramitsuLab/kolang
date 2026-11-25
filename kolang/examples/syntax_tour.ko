@@ -19,9 +19,6 @@ words = ["a", "b"]
 # --- 名前 ---
 # 英数字と _ は、そのまま名前にできる（先頭は英字、_ は途中だけ）。
 snake_case = 1
-# それ以外の文字（日本語、記号）を使いたいときは、_ で囲む。
-_合計_ = 0
-_total count_ = 0
 
 # --- 代入・添字 ---
 first = xs[0]
@@ -115,15 +112,4 @@ print(first_negative([3, 1, -4, 1]))
 print(add_pair(add_pair(1, 2), double(3)))     # 引数に呼び出しを入れ子にする
 print(no_args())
 print(fact(5))
-print(xs)
-print(nested)
-print(minus)
-print(_合計_)
-print(nothing)
-print(yes)
-print(pi)
-print(s2)
-print(i)
-print(first)
-print(cell)
 ```

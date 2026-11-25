@@ -5,7 +5,7 @@ from kolang import ParseError, convert, parse
 from kolang import ast as K
 from kolang.pyeval import PyEval, run
 
-SYNTAXES = ("pylike", "ja", "lisplike", "jslike", "ja:jslike(assign,block,funcapp)")
+SYNTAXES = ("pylike", "jalike", "lisplike", "jslike", "jalike:jslike(assign,block,funcapp)")
 
 PY = (
     "def add(a, b):\n"
@@ -70,7 +70,7 @@ class Parsing(unittest.TestCase):
 
     def test_only_a_call_or_a_variable(self):
         for expr in ("1", "None", "True", "'a'", "[1, 2]", "-x", "f(1) g(2)", "(f 1)", "f(1", ""):
-            for name in ("pylike", "ja", "lisplike"):
+            for name in ("pylike", "jalike", "lisplike"):
                 with self.subTest(expr=expr, name=name):
                     with self.assertRaises(ParseError):
                         parse(f">>> {expr}\n1\n", name)
@@ -97,7 +97,7 @@ class Convert(unittest.TestCase):
                 self.assertEqual(convert(text, name, "pylike"), convert(PY, "pylike", "pylike"))
 
     def test_answer_is_always_json(self):
-        text = convert(">>> f(1)\n[1,\"あ\",null,true]\n", "pylike", "ja")
+        text = convert(">>> f(1)\n[1,\"あ\",null,true]\n", "pylike", "jalike")
         self.assertEqual(text, ">>> f(1)\n[1, \"あ\", null, true]\n")       # 式は変わらない（pylike のまま）
 
 
@@ -126,17 +126,17 @@ class Evaluate(unittest.TestCase):
         self.assertEqual(self.results("(set x (list 1 2))\n>>> x\n[1, 2]\n", "lisplike"), [True])
 
     def test_standard_names_work_in_every_syntax(self):
-        # ja では add は「足し算」。doctest は pylike の名前（標準名）で書ける
+        # jalike では add は「足し算」。doctest は pylike の名前（標準名）で書ける
         for name in SYNTAXES:
             with self.subTest(name=name):
                 self.assertEqual(self.results(convert("x = 1\n>>> add(x, 2)\n3\n>>> sub(x, 2)\n3\n", "pylike", name), name),
                                  [True, False])
-        self.assertEqual(parse(">>> add(1, 2)\n3\n", "ja").stmts[0].expr, K.Call("足し算", (K.Num(1), K.Num(2))))
+        self.assertEqual(parse(">>> add(1, 2)\n3\n", "jalike").stmts[0].expr, K.Call("足し算", (K.Num(1), K.Num(2))))
 
     def test_own_function_hides_the_standard_name(self):
-        text = convert("def add(a):\n    return a\n>>> add(5)\n5\n", "pylike", "ja")
-        self.assertEqual(self.results(text, "ja"), [True])
-        self.assertEqual(parse(text, "ja").stmts[1].expr, K.Call("add", (K.Num(5),)))
+        text = convert("def add(a):\n    return a\n>>> add(5)\n5\n", "pylike", "jalike")
+        self.assertEqual(self.results(text, "jalike"), [True])
+        self.assertEqual(parse(text, "jalike").stmts[1].expr, K.Call("add", (K.Num(5),)))
 
     def test_override_matching(self):
         class Loose(PyEval):

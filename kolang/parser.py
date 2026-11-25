@@ -112,7 +112,7 @@ def build_grammar(syn: Syntax, entry: str = "program") -> Parser:
         neg_first.append(seq(T("neg_begin"), expression, T("neg_end")).pick(1).map(K.Neg))
 
     # 式の括弧（grouping_begin 式 grouping_end）。AST は中の式そのまま。省略可のトークン。
-    # funcapp と記号が重なっても（ja の「（」）、funcapp を先に試して、だめなら括弧と読む。
+    # funcapp と記号が重なっても（jalike の「（」）、funcapp を先に試して、だめなら括弧と読む。
     grouping_after: list = []
     if "grouping_begin" in syn.tokens:
         grouping_after.append(seq(T("grouping_begin"), expression, T("grouping_end")).pick(1))
@@ -139,10 +139,18 @@ def build_grammar(syn: Syntax, entry: str = "program") -> Parser:
 
     # ---- 文 -----------------------------------------------------------------
     # 代入・増減の左辺は <variable>（<expression> の部分集合）で受ける。
-    assign = seq(T("assign_begin"), variable, T("assign_op"), expression, T("assign_end")
-                 ).pick(1, 3).apply(K.Assign)
-    append = seq(T("append_begin"), expression, T("append_sep"), expression, T("append_end")
-                 ).pick(1, 3).apply(K.Append)
+    if syn.assign == "value_first":
+        assign = seq(T("assign_begin"), expression, T("assign_op"), variable, T("assign_end")
+                     ).pick(3, 1).apply(K.Assign)
+    else:
+        assign = seq(T("assign_begin"), variable, T("assign_op"), expression, T("assign_end")
+                     ).pick(1, 3).apply(K.Assign)
+    if syn.append == "value_first":
+        append = seq(T("append_begin"), expression, T("append_sep"), expression, T("append_end")
+                     ).pick(3, 1).apply(K.Append)
+    else:
+        append = seq(T("append_begin"), expression, T("append_sep"), expression, T("append_end")
+                     ).pick(1, 3).apply(K.Append)
     inc = seq(T("inc_begin"), variable, T("inc_end")).pick(1).map(K.Inc)
     dec = seq(T("dec_begin"), variable, T("dec_end")).pick(1).map(K.Dec)
 

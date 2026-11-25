@@ -13,7 +13,7 @@ from kolang import load_syntax, parse, unparse
 from kolang.snippet import SNIPPETS, failures
 from kolang.syntax import GROUPS
 
-BASES = ("pylike", "ja", "lisplike", "jslike")
+BASES = ("pylike", "jalike", "lisplike", "jslike")
 # 別名（call）と、ほかのグループを含むだけのものは除く
 GROUP_NAMES = tuple(g for g in GROUPS if g != "call")
 
@@ -35,16 +35,16 @@ def cascades():
 
 # 常に検査するカスケード。増やしたいシンタックスはここに足す。
 CASCADES = (
-    "ja:jslike(assign,block,funcapp)",
-    "ja:pylike(funcapp)",           # call: args_first → func_first（引数と名前の順が変わる）
-    "pylike:ja(funcapp)",           # func_first → args_first
-    "ja:lisplike(funcapp)",
-    "ja:jslike(funcapp)",
-    "pylike:ja(grouping)",          # 括弧の無いベースに、括弧を取り込む
-    "ja:pylike(grouping)",
-    "pylike:ja(else)",              # continuation が else_begin と連動する
-    "ja:jslike(else)",              # else の行頭の空白がインデントを狂わせない
-    "jslike:ja(block)",
+    "jalike:jslike(assign,block,funcapp)",
+    "jalike:pylike(funcapp)",           # call: args_first → func_first（引数と名前の順が変わる）
+    "pylike:jalike(funcapp)",           # func_first → args_first
+    "jalike:lisplike(funcapp)",
+    "jalike:jslike(funcapp)",
+    "pylike:jalike(grouping)",          # 括弧の無いベースに、括弧を取り込む
+    "jalike:pylike(grouping)",
+    "pylike:jalike(else)",              # continuation が else_begin と連動する
+    "jalike:jslike(else)",              # else の行頭の空白がインデントを狂わせない
+    "jslike:jalike(block)",
     "jslike:pylike(space)",         # none の空白に改行が足される
     "pylike:lisplike(append)",      # 後置の添字は変数のすぐ後ろだけ
     "jslike:lisplike(append)",
@@ -93,7 +93,7 @@ class CascadeMatrix(unittest.TestCase):
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1 and not sys.argv[1].startswith("-"):
-        # python3 -m tests.test_cascade_matrix "ja:jslike(assign,block)" lisplike:ja ...
+        # python3 -m tests.test_cascade_matrix "jalike:jslike(assign,block)" lisplike:jalike ...
         status = 0
         for spec in sys.argv[1:]:
             bad = check(spec)

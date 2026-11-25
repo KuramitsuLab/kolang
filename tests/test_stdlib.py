@@ -13,7 +13,7 @@ from kolang.unparser import convert
 from kolang.syntax import SYNTAX_DIR
 
 PYLIKE = json.loads((SYNTAX_DIR / "pylike.json").read_text(encoding="utf-8"))
-JA = json.loads((SYNTAX_DIR / "ja.json").read_text(encoding="utf-8"))
+JA = json.loads((SYNTAX_DIR / "jalike.json").read_text(encoding="utf-8"))
 
 
 def with_stdlib(base, stdlib):
@@ -49,7 +49,7 @@ class Arithmetic(unittest.TestCase):
                 self.assertEqual(str(cm.exception), expected[1])
 
     def test_conversions_in_japanese(self):
-        self.assertEqual(output("((\"n=\",((\"5\")における整数化の値)における文字列化の値)における足し算の値,(0)におけるブール化の値,(2)における小数化の値)における表示の値\n", "ja"),
+        self.assertEqual(output("((\"n=\",((\"5\")における整数化の値)における文字列化の値)における足し算の値,(0)におけるブール化の値,(2)における小数化の値)における表示の値\n", "jalike"),
                          "n=5 False 2.0\n")
 
     def test_mod_and_pow(self):
@@ -97,23 +97,23 @@ class Rename(unittest.TestCase):
         self.assertEqual(syn.function_names["len"], "len")       # JSON に書いていないものも、標準名のまま
 
     def test_shipped_syntaxes(self):
-        ja = load_syntax("ja").function_names
-        self.assertEqual([ja[n] for n in ("print", "add", "sub", "mul", "div", "mod", "pow")],
+        jalike = load_syntax("jalike").function_names
+        self.assertEqual([jalike[n] for n in ("print", "add", "sub", "mul", "div", "mod", "pow")],
                          ["表示", "足し算", "引き算", "掛け算", "割り算", "余り", "べき乗"])
-        self.assertEqual([ja[n] for n in ("int", "str", "float", "bool")],
+        self.assertEqual([jalike[n] for n in ("int", "str", "float", "bool")],
                          ["整数化", "文字列化", "小数化", "ブール化"])
         for name in ("pylike", "jslike", "lisplike"):
             self.assertEqual(load_syntax(name).function_names["print"], "print")
 
     def test_japanese_program(self):
-        src = ("xに(1,2)における足し算の値を代入\n"
+        src = ("(1,2)における足し算の値をxに代入\n"
                "((x,(8,2)における割り算の値)における掛け算の値,(x,1)における引き算の値)における表示の値\n")
-        self.assertEqual(output(src, "ja"), "12.0 2\n")
+        self.assertEqual(output(src, "jalike"), "12.0 2\n")
 
     def test_plain_ja_cascade_keeps_japanese_names(self):
-        # ベースの ja の名前を引き継ぐ。jslike の名前に変えたいときは stdlib グループも取り込む。
-        self.assertEqual(output("表示(1);\n", "ja:jslike(assign,block,funcapp)"), "1\n")
-        self.assertEqual(output("print(1);\n", "ja:jslike(assign,block,funcapp,stdlib)"), "1\n")
+        # ベースの jalike の名前を引き継ぐ。jslike の名前に変えたいときは stdlib グループも取り込む。
+        self.assertEqual(output("表示(1);\n", "jalike:jslike(assign,block,funcapp)"), "1\n")
+        self.assertEqual(output("print(1);\n", "jalike:jslike(assign,block,funcapp,stdlib)"), "1\n")
 
     def test_rename(self):
         syn = with_stdlib(PYLIKE, {"print": "out", "add": "plus"})
@@ -126,15 +126,15 @@ class Rename(unittest.TestCase):
         # 表示 も たし算 も漢字を含むが、関数名の位置では引用なしでも書ける（「」で囲んでも読める）。
         syn = with_stdlib(JA, {"print": "表示", "add": "たし算"})
         self.assertEqual(output("((1,2)における_たし算_の値)における表示の値\n", syn), "3\n")
-        self.assertEqual(output("(【1,2】)における表示の値\n", syn), "[1, 2]\n")
+        self.assertEqual(output("([1,2])における表示の値\n", syn), "[1, 2]\n")
 
     def test_cascade_refers_to_stdlib_names(self):
         # カスケードでも、合成後の stdlib の名前（漢字）を、関数名として引用なしで読み書きできる。
         for spec, src in [
-            ("ja", "((1,2)における足し算の値)における表示の値\n"),
-            ("ja:jslike(assign,block,funcapp)", "表示(足し算(1, 2));\n"),           # stdlib はベース（ja）のまま
-            ("jslike:ja(stdlib)", "表示(足し算(1, 2));\n"),                      # 名前だけ ja、呼び出しは jslike
-            ("jslike:ja(funcapp,stdlib)", "((1,2)における足し算の値)における表示の値;\n"),
+            ("jalike", "((1,2)における足し算の値)における表示の値\n"),
+            ("jalike:jslike(assign,block,funcapp)", "表示(足し算(1, 2));\n"),           # stdlib はベース（jalike）のまま
+            ("jslike:jalike(stdlib)", "表示(足し算(1, 2));\n"),                      # 名前だけ jalike、呼び出しは jslike
+            ("jslike:jalike(funcapp,stdlib)", "((1,2)における足し算の値)における表示の値;\n"),
         ]:
             with self.subTest(spec=spec):
                 self.assertEqual(output(src, spec), "3\n")
@@ -143,7 +143,7 @@ class Rename(unittest.TestCase):
     def test_cascade_without_stdlib_group_keeps_base_names(self):
         # stdlib グループを取り込まなければ、jslike の標準名（print）は使えず、ベースの名前になる。
         with self.assertRaises(NameError):
-            run("print(1);\n", load_syntax("ja:jslike(assign,block,funcapp)"))
+            run("print(1);\n", load_syntax("jalike:jslike(assign,block,funcapp)"))
 
     def test_stdlib_name_can_be_a_function_name_without_quotes(self):
         # stdlib で定義した名前は、漢字でも、関数名の位置では引用なしで書ける（読み書きとも）。

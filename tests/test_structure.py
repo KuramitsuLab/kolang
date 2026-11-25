@@ -12,7 +12,7 @@ def found(spec):
 
 class Structure(unittest.TestCase):
     def test_builtin_syntaxes_are_clean(self):
-        for name in ("pylike", "ja", "lisplike", "jslike"):
+        for name in ("pylike", "jalike", "lisplike", "jslike"):
             self.assertEqual(found(name), [], name)
 
     def test_indent_needs_empty_ends(self):
@@ -22,16 +22,16 @@ class Structure(unittest.TestCase):
         self.assertEqual(len(found("pylike:lisplike(def)")), 1)
 
     def test_greedy_block_needs_closing_token(self):
-        # lisplike は block が空。if_end が空の ja の if を混ぜると、本体の終わりがなくなる。
-        (msg,) = found("lisplike:ja(if)")
+        # lisplike は block が空。if_end が空の jalike の if を混ぜると、本体の終わりがなくなる。
+        (msg,) = found("lisplike:jalike(if)")
         self.assertIn("if_end", msg)
         self.assertIn("本体", msg)
-        self.assertTrue(found("lisplike:ja(repeat)"))
+        self.assertTrue(found("lisplike:jalike(repeat)"))
         self.assertTrue(found("lisplike:jslike(def)"))
 
     def test_block_with_braces_is_fine(self):
         self.assertEqual(found("jslike:pylike(if)"), found("jslike:pylike(if)"))
-        self.assertEqual(found("ja:jslike(assign,block,funcapp)"), [])
+        self.assertEqual(found("jalike:jslike(assign,block,funcapp)"), [])
 
     def test_comment_marker_collision(self):
         (msg,) = found("jslike:lisplike(comment)")      # `;` が block_sep（`;?`）と重なる
@@ -55,8 +55,8 @@ class Structure(unittest.TestCase):
     def test_no_warning_for_clean_cascade(self):
         with warnings.catch_warnings():
             warnings.simplefilter("error")
-            load_syntax("ja:jslike(assign,block,funcapp)")
-            load_syntax("pylike:ja(else)")
+            load_syntax("jalike:jslike(assign,block,funcapp)")
+            load_syntax("pylike:jalike(else)")
 
     @unittest.skipUnless(os.environ.get("KOLANG_MATRIX"), "遅い。KOLANG_MATRIX=1 で全組み合わせを実行")
     def test_structure_matches_snippets(self):

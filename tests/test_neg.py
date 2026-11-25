@@ -22,13 +22,13 @@ class Negation(unittest.TestCase):
         self.assertEqual(stmt.value, K.Neg(K.Num(1)))      # Num(-1) ではない
 
     def test_all_syntaxes(self):
-        for name in ("pylike", "ja", "jslike", "lisplike"):
+        for name in ("pylike", "jalike", "jslike", "lisplike"):
             with self.subTest(syntax=name):
                 self.assertEqual(parse(unparse(TREE, name), name), TREE)
 
     def test_text(self):
         self.assertEqual(convert("x = -y\n", "pylike", "lisplike"), "(set x (neg y))\n")
-        self.assertEqual(convert("(set x (neg (neg 1)))", "lisplike", "ja"), "xに--1を代入\n")
+        self.assertEqual(convert("(set x (neg (neg 1)))", "lisplike", "jalike"), "--1をxに代入\n")
         self.assertEqual(convert("x = -1\n", "pylike", "jslike"), "x = -1;\n")
 
     def test_negative_num_literal_is_not_writable(self):

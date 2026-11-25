@@ -2,12 +2,12 @@
 
 kolang の文法の骨格は固定です（[kolang.md](kolang.md)）。区切りの記号は**トークン名**で書かれていて、シンタックス定義の JSON は、そのトークン名に**正規表現**を割り当てます。ここでは JSON の全キーと、トークンの意味、読み書きの規則をまとめます。
 
-実例は `kolang/syntaxes/` の `pylike.json`（Python 風）、`ja.json`（日本語風）、`lisplike.json`（Lisp 風）、`jslike.json`（JavaScript 風）、`pslike.json`（PostScript 風）です。
+実例は `kolang/syntaxes/` の `pylike.json`（Python 風）、`jalike.json`（日本語風）、`lisplike.json`（Lisp 風）、`jslike.json`（JavaScript 風）、`pslike.json`（PostScript 風）です。
 
 ## 置き場所と使い方
 
 - `kolang/syntaxes/NAME.json` に置くと、`NAME` という名前で使えます（`kolang --list` に出ます）。
-- 任意の場所の JSON も、パスを指定して使えます（`kolang conv -f ./my.json -t ja`、`kolang --show ./my.json`）。
+- 任意の場所の JSON も、パスを指定して使えます（`kolang conv -f ./my.json -t jalike`、`kolang --show ./my.json`）。
 - Python からは `load_syntax("NAME")` または `syntax_from_dict(dict)` です。
 - 文字コードは UTF-8 です。
 
@@ -18,7 +18,7 @@ kolang の文法の骨格は固定です（[kolang.md](kolang.md)）。区切り
 シンタックスの指定は `BASE:OVERLAY(グループ,…)` の形で、ベースの一部だけを別のシンタックスに差し替えられます。`kolang --show`、`-f`、`-t`、`load_syntax` のどれにも書けます。
 
 ```
-kolang conv -f pylike -t 'ja:jslike(assign,block,funcapp)'
+kolang conv -f pylike -t 'jalike:jslike(assign,block,funcapp)'
 ```
 
 - 左がベースで、`:` でいくつでもつなげられます（左から順に重ねる）。
@@ -31,6 +31,8 @@ kolang conv -f pylike -t 'ja:jslike(assign,block,funcapp)'
 | `comment` | `comment` グループ（`comment_begin` `comment_end`） |
 | `block` | `block_*`、`layout` `toplevel` |
 | `assign` `append` `inc` `dec` `if` `else` `repeat` `return` | 同名の `*_*` トークン |
+| `assign`（`assign` キー） | `tokens.assign` の `order`（`"target_first"` 既定 `xに1を代入` \| `"value_first"` `1をxに代入`）。トップの `assign` に入り、カスケードでも `assign` グループと一緒に移る |
+| `append`（`append` キー） | `tokens.append` の `order`（`"target_first"` 既定 `xsに1を追加` \| `"value_first"` `1をxsに追加`）。`assign` と同じ扱い |
 | `break` | `break` |
 | `def` | `def_*` `params_*` `param_*` |
 | `condition` | `ne` `lt` `gt` `le` `ge` `eq` の全部（個別にも書ける） |
@@ -71,7 +73,7 @@ JSON の文字列の中では、正規表現のバックスラッシュを二重
 
 ## トークン（`tokens`）
 
-トークンは、**グループにまとめて**書きます。グループ名 + `_` + キーが、トークン名です（`block` グループの `begin` は `block_begin`）。`キー.emit` は、そのトークンの出力用の文字列です（後述）。`true` `false` `none` `break` は、グループに入らず、文字列で書きます。これがカスケード（`ja:jslike(block)`）の取り込みの単位です。
+トークンは、**グループにまとめて**書きます。グループ名 + `_` + キーが、トークン名です（`block` グループの `begin` は `block_begin`）。`キー.emit` は、そのトークンの出力用の文字列です（後述）。`true` `false` `none` `break` は、グループに入らず、文字列で書きます。これがカスケード（`jalike:jslike(block)`）の取り込みの単位です。
 
 ```jsonc
 "tokens": {
@@ -100,7 +102,7 @@ JSON の文字列の中では、正規表現のバックスラッシュを二重
 
 | 文 | トークン列 |
 |---|---|
-| 代入 | `assign_begin 変数 assign_op 式 assign_end` |
+| 代入 | `assign_begin 変数 assign_op 式 assign_end`（`order` が `"value_first"` のときは `assign_begin 式 assign_op 変数 assign_end`） |
 | 追加 | `append_begin 式 append_sep 式 append_end` |
 | 増やす | `inc_begin 変数 inc_end` |
 | 減らす | `dec_begin 変数 dec_end` |
@@ -131,8 +133,8 @@ JSON の文字列の中では、正規表現のバックスラッシュを二重
 |---|---|
 | 真偽値・none | `true` `false` `none` |
 | リスト | `list_begin (式 list_sep)* list_end` |
-| 式の括弧 | `grouping_begin 式 grouping_end`。**省略できる**トークン。AST は中の式そのまま。ja は `(` `)`（添字の `の(` `)番目` と合わせて `aの((x)におけるlenの値)番目`）。`call_begin` と同じ `(` でも、関数呼び出しを先に試して、だめなら括弧と読む |
-| 符号の反転 | `neg_begin 式 neg_end`（`-X`）。**省略できる**トークンで、`neg_begin` が無いシンタックスは `-X` を読み書きしない（書き出しは `UnparseError`）。pylike・ja・jslike は `-`（`neg_end` は空）、lisplike は `(neg X)`、`neg_begin` が空なら後置（pslike の `x neg`。式のあとに `neg_end` を畳み込む）（`neg` は予約語）。数字（`number`）は符号を含まないので、`-1` は `Neg(Num(1))` |
+| 式の括弧 | `grouping_begin 式 grouping_end`。**省略できる**トークン。AST は中の式そのまま。jalike は `(` `)`（添字の `の(` `)番目` と合わせて `aの((x)におけるlenの値)番目`）。`call_begin` と同じ `(` でも、関数呼び出しを先に試して、だめなら括弧と読む |
+| 符号の反転 | `neg_begin 式 neg_end`（`-X`）。**省略できる**トークンで、`neg_begin` が無いシンタックスは `-X` を読み書きしない（書き出しは `UnparseError`）。pylike・jalike・jslike は `-`（`neg_end` は空）、lisplike は `(neg X)`、`neg_begin` が空なら後置（pslike の `x neg`。式のあとに `neg_end` を畳み込む）（`neg` は予約語）。数字（`number`）は符号を含まないので、`-1` は `Neg(Num(1))` |
 | 関数呼び出し | `call_begin 名前 call_name_end (式 arg_sep)* call_end`（`order` が `"args_first"` のときは `call_begin (式 arg_sep)* call_name_end 名前 call_end`） |
 | 配列の添字 | `index_begin` `index_end`（`index_sep` は `prefix` のとき）。下の「配列の添字」を参照 |
 | 特殊な名前 | `quote_begin 文字列 quote_end`。`lexical.letters` に合わない名前を書く囲み |
@@ -199,7 +201,7 @@ doctest 風の例は、`>>> 式` の次の行に JSON の答えです（`>>>` �
 これで、`if` と `ifx`、`return1`、`1y` を区別できます。トークンの正規表現に `\b` を書く必要はありません。
 
 - 記号どうし、記号と語は、空白なしで続けて書けます（`x=1`、`f(1,2)`）。
-- 日本語の助詞や漢字を `word_segment` に含めなければ、`xに1を代入` のように空白なしで書けます。
+- 日本語の助詞や漢字を `word_segment` に含めなければ、`1をxに代入` のように空白なしで書けます。
 - 省略すると、この規則は使いません。
 - 規則に反したとき、エラーの期待に `space` が出ます。
 
@@ -248,7 +250,7 @@ doctest 風の例は、`>>> 式` の次の行に JSON の答えです（`>>>` �
 
 ```jsonc
 "continuation": "else\\b"        // pylike
-"continuation": "そうでなければ"   // ja
+"continuation": "そうでなければ"   // jalike
 ```
 
 ## 最上位（`toplevel`）
@@ -269,7 +271,7 @@ doctest 風の例は、`>>> 式` の次の行に JSON の答えです（`>>>` �
 | 値 | 例 | 並び |
 |---|---|---|
 | `"func_first"`（既定） | `f(x, y)` | `call_begin` 名前 `call_name_end` 引数 `call_end` |
-| `"args_first"` | `(x, y)におけるfの値`（ja） | `call_begin` 引数 `call_name_end` 名前 `call_end`（`call_name_end` は引数と名前のあいだ） |
+| `"args_first"` | `(x, y)におけるfの値`（jalike） | `call_begin` 引数 `call_name_end` 名前 `call_end`（`call_name_end` は引数と名前のあいだ） |
 
 AST は同じ `Call(func, args)` で、シンタックス間の変換でも順序が入れ替わります。
 
@@ -303,19 +305,19 @@ kolang には演算子も `print` もありません。出力や四則演算は�
 }
 ```
 
-実例は、`ja.json`（`表示` `足し算` `引き算` `掛け算` `割り算` `余り` `べき乗` `整数化` `文字列化` `小数化` `ブール化`）です。`pylike.json` などは、標準名のままを明示しています（`"stdlib": {"print": "print", ...}`）。
+実例は、`jalike.json`（`表示` `足し算` `引き算` `掛け算` `割り算` `余り` `べき乗` `整数化` `文字列化` `小数化` `ブール化`）です。`pylike.json` などは、標準名のままを明示しています（`"stdlib": {"print": "print", ...}`）。
 
 - 名前は、`lexical.letters` に合う（かつ予約語でない）か、`lexical.characters` に合う（`quote_begin`〜`quote_end` で囲んで呼ぶ）ものにします。上の `たし算` は漢字を含むので、日本語風では `_たし算_(1, 2)` のように書きます。
 - `stdlib` で定義した名前は、**関数呼び出しの関数名の位置**では、`letters` に合わない名前（漢字など）でも引用なしで書けます（`(1)における表示の値`）。パーサは stdlib の名前を先に試し、出力器も引用せずに書きます。変数など、ほかの位置では今までどおり引用（`_表示_`）が要ります。
 - 読み込み時に検査します（`ValueError`）: `stdlib` のキーが標準名にない関数、書けない名前、名前の重複（`print` を `len` にする、など）。
 - 評価器（`kolang run`）が、この名前で関数を並べます。パースには関係しません（AST には書いた名前が入ります）。
-- **変換では、関数名も書き換わります**（`kolang conv -f pylike -t ja` で `print(x)` → `表示（x）`）。標準ライブラリ関数の呼び出しと、関数名の参照だけです。
+- **変換では、関数名も書き換わります**（`kolang conv -f pylike -t jalike` で `print(x)` → `表示（x）`）。標準ライブラリ関数の呼び出しと、関数名の参照だけです。
   - プログラムが同じ名前を自分で定義している（関数・引数・代入される変数）ときは、自作の名前なので書き換えません（Python と同じく、自作が標準を隠す）。
-  - 書き換えた名前が、プログラムの自作の名前とぶつかるとき（pylike の `add(1, 2)` を ja にするのに、自作の `足し算` がある、など）は、意味が変わるので `UnparseError` です。使われていない名前は、ぶつかっても構いません。
+  - 書き換えた名前が、プログラムの自作の名前とぶつかるとき（pylike の `add(1, 2)` を jalike にするのに、自作の `足し算` がある、など）は、意味が変わるので `UnparseError` です。使われていない名前は、ぶつかっても構いません。
   - 書き換えたくないときは、`kolang --no-rename`、Python からは `convert(..., rename=False)` です。
   - `--show` の例も、そのシンタックスの名前で出ます。
 - 自分で同じ名前の関数を定義すると、そちらが優先されます（Python と同じく、ローカルが組み込みを隠す）。
-- カスケード（`ja:jslike(...)`）では、`stdlib` グループ（`stdlib` キー）で取り込めます。取り込まなければ、ベースの名前のままです（`ja:jslike(assign,block,funcapp)` の関数名は `表示` など）。
+- カスケード（`jalike:jslike(...)`）では、`stdlib` グループ（`stdlib` キー）で取り込めます。取り込まなければ、ベースの名前のままです（`jalike:jslike(assign,block,funcapp)` の関数名は `表示` など）。
 
 ## 予約語（自動抽出）
 

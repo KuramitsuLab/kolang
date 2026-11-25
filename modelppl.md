@@ -11,41 +11,40 @@
 ## 使い方
 
 ```
-kolang modelppl                                 # modelppl.csv を読んで（なければ作って）測る
-kolang modelppl -s pylike ja "ja:jslike(assign)"   # シンタックスを指定（カスケード可）
-kolang modelppl -m allenai/OLMo-2-0425-1B       # モデルを変える
-kolang modelppl --snippets assign,index --show  # 一部のスニペットだけ。出力したコードも表示
-kolang modelppl --json out.json                 # スニペットごとの結果を JSON に保存
-kolang modelppl --no-csv                        # CSV を読み書きしない
+kolang modelppl pylike jalike lisplike jslike   # 4 つのシンタックスを既定モデルで測る
+kolang modelppl pylike "jalike:jslike(assign)"  # カスケードも可
+kolang modelppl -m allenai/OLMo-2-0425-1B pylike  # モデルを変える（--model）
+kolang modelppl pylike --snippets assign,index --show  # 一部のスニペットだけ。出力したコードも表示
+kolang modelppl pylike --json out.json          # スニペットごとの結果を JSON に保存
+kolang modelppl pylike --no-csv                 # CSV に書かない
 kolang modelppl --list-snippets                 # スニペット名の一覧
 python3 -m kolang.modelppl ...                  # 同じ（サブコマンドなしでも呼べる）
 ```
 
-| オプション | 意味 |
+| 引数・オプション | 意味 |
 |---|---|
-| `-s, --syntaxes` | 測るシンタックス。CSV にない分は行として足す |
+| `SYNTAX...` | 測るシンタックス（1 個以上。必須） |
 | `-m, --model` | Hugging Face のモデル名 |
 | `--device` | `cpu` / `cuda` / `mps`（既定は自動） |
 | `--csv FILE` | 結果の CSV（既定 `modelppl.csv`） |
-| `--no-csv` | CSV を使わない |
+| `--no-csv` | CSV に書かない |
 | `--snippets` | スニペット名をカンマ区切りで（既定は全部） |
 | `--show` | 出力したコードと、スニペットごとの値も表示 |
 | `--json FILE` | スニペットごとの結果を JSON で保存 |
 
 ## CSV（modelppl.csv）
 
-第一カラムが `syntax`。その行のシンタックスについて、`NLL, tok, char, PPL, bpc` の 5 列を計算して埋める。
+列は `model, syntax, NLL, tokens, PPL, bpc`。
 
 ```
-syntax,NLL,tok,char,PPL,bpc
-pylike,2823.75,754,1456,42.310,2.7980
-ja,4547.78,1052,1322,75.414,4.9630
+model,syntax,NLL,tokens,PPL,bpc
+Qwen/Qwen2.5-Coder-1.5B-Instruct,pylike,2820.27,754,42.116,2.7945
+Qwen/Qwen2.5-Coder-1.5B-Instruct,jalike,5094.57,1337,45.171,4.2217
 ```
 
-- **ファイルがあるとき**: 第一カラムのシンタックスを測り、5 列を書き込む（上書き）。
-  ヘッダに 5 列がなければ右に足す。ほかの列（メモなど）はそのまま残す。空の行は無視する。
-- **ファイルがないとき**: `-s` のシンタックス（なければ `pylike ja lisplike jslike`）で新規作成する。
-- **`-s` を付けたとき**: CSV にないシンタックスを末尾の行に足す。
+- キーは `(model, syntax)`。同じ組があれば置き換え、なければ末尾に足す。ほかのモデル・シンタックスの行はそのまま残る。
+- 古い形式（`syntax,NLL,tok,char,PPL,bpc`）は、既定モデルの結果として読み、次の書き込みで新しい列に直す。
+- 値は、そのとき一緒に指定したシンタックスの全部で出力できたスニペットだけの合計。比べたいシンタックスは同じ実行で測る。
 - 読めないシンタックス名（存在しない・カスケードの書き方が違う）はエラーで止まる。
 
 ## 指標
@@ -80,11 +79,11 @@ CSV の値は、**全シンタックスで出力できたスニペットだけ**
 | pylike | 2823.8 | 754 | 1456 | 42.31 | 2.798 |
 | jslike | 3120.3 | 748 | 1416 | 64.81 | 3.179 |
 | lisplike | 3190.0 | 854 | 1846 | 41.90 | 2.493 |
-| ja | 4547.8 | 1052 | 1322 | 75.41 | 4.963 |
+| jalike | 4547.8 | 1052 | 1322 | 75.41 | 4.963 |
 
 - NLL は pylike が最小。pylike が最小だったスニペットは 40 個中 34 個。
 - lisplike は PPL と bpc が最良だが、括弧と定型語でトークン数・文字数が増えるため。総量（NLL）では pylike に負ける。
-- ja は文字数が最少なのに、トークン数は最多。日本語と全角記号が細かく分割される。
+- jalike は文字数が最少なのに、トークン数は最多。日本語と全角記号が細かく分割される。
 
 ## 注意
 

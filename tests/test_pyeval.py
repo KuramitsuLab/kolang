@@ -234,7 +234,7 @@ class Adjustable(unittest.TestCase):
 
     def test_other_syntax(self):
         out = io.StringIO()
-        run("xs = 【1,2】;\nxsに3を追加;\nprint(xs);\n", "ja:jslike(assign,block,funcapp,stdlib)", stdout=out)
+        run("xs = [1,2];\n3をxsに追加;\nprint(xs);\n", "jalike:jslike(assign,block,funcapp,stdlib)", stdout=out)
         self.assertEqual(out.getvalue(), "[1, 2, 3]\n")
 
 

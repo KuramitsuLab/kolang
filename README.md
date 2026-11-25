@@ -6,10 +6,10 @@
 # Python 風                      ※ 日本語風                       ; Lisp 風
 def add(a, b):                  関数 add(a, b)とは               (def add (a b) (return a))
     return a                        aを返す
-s = 0                           sに0を代入                         (set s 0)
+s = 0                           0をsに代入                         (set s 0)
 for _ in range(3):              3回くり返す                        (repeat 3 (inc s))
     s += 1                          sを増やす
-y = x[0]                        yにxの(0)番目を代入                  (set y (get x 0))
+y = x[0]                        xの(0)番目をyに代入                  (set y (get x 0))
 ```
 
 どれも同じ AST になります。できること:
@@ -34,30 +34,30 @@ pip install torch transformers     # kolang modelppl を使うときだけ
 ```
 kolang --list                      使えるシンタックスの一覧
 kolang --show lisplike             書き方の例を表示
-kolang show_ebnf ja                そのシンタックスの BNF（kolang.md の規則を、そのシンタックスの記号で）
-kolang show_snippet ja [NAME...]   スニペット（検査用の AST）をそのシンタックスで表示（--list で名前の一覧）
-kolang conv prog.py -f pylike -t ja   シンタックスを変換（ファイルなしなら標準入力、-o で出力先）
-kolang conv prog.ko -t ja             .ko なら -f は不要
+kolang show_ebnf jalike                そのシンタックスの BNF（kolang.md の規則を、そのシンタックスの記号で）
+kolang show_snippet jalike [NAME...]   スニペット（検査用の AST）をそのシンタックスで表示（--list で名前の一覧）
+kolang conv prog.py -f pylike -t jalike   シンタックスを変換（ファイルなしなら標準入力、-o で出力先）
+kolang conv prog.ko -t jalike             .ko なら -f は不要
 kolang conv prog.py -f pylike         構文チェックだけ（-t を省略）
-kolang conv doc.md -t ja              .md の ```pylike などのブロックを全部変換（文章はそのまま）
+kolang conv doc.md -t jalike              .md の ```pylike などのブロックを全部変換（文章はそのまま）
 kolang run prog.py [-f pylike]     実行する（ファイルなしなら標準入力）
 kolang run prog.ko                 .ko ファイルを実行する（シンタックスは 1 行目で指定）
 kolang cov examples/*.ko           構文（AST のノード）と標準ライブラリ関数の使用回数を数える
 kolang eval SYNTAX [-t ID...] [-d N...] [-q]  評価問題（kolangeval.jsonl）の正解を SYNTAX に変換し、doctest で動作を確かめる
 kolang eval SYNTAX --model NAME [--context FILE] [-o OUT.jsonl]  モデルにコードを生成させて採点（結果は jsonl）
-kolang modelppl [-s SYNTAX...]     シンタックスと LLM の親和度を測り、modelppl.csv に書く
+kolang modelppl SYNTAX... [-m MODEL] シンタックスと LLM の親和度を測り、modelppl.csv に書く
 ```
 
 - シンタックスは、名前（`--list` に出るもの）、JSON ファイルのパス、またはカスケード（後述）で指定します。`python -m kolang ...` でも同じです。
 - 変換では、標準ライブラリ関数の名前も書き換わります。止めるには `--no-rename` です。
 - `*.emit` に候補の配列を書くと、`--random-emit SEED` のときだけ候補から選びます（省略すると常に最初）。
-- `.ko` ファイルは、1 行目に ` ```ja:jslike(assign) ` のようにシンタックスを書き、閉じの ` ``` ` までをコードとして読みます（`-f` は不要）。`kolang run x.ko` は、同じフォルダに `x.doctest`（フェンスなし、同じシンタックスのコードに、`>>> f(x)` と答えを並べたもの）があれば、続けてテストします。本体で定義した名前（関数・変数）が見えます。`-o out.ko` で変換結果を `.ko` 形式で書けます。
+- `.ko` ファイルは、1 行目に ` ```jalike:jslike(assign) ` のようにシンタックスを書き、閉じの ` ``` ` までをコードとして読みます（`-f` は不要）。`kolang run x.ko` は、同じフォルダに `x.doctest`（フェンスなし、同じシンタックスのコードに、`>>> f(x)` と答えを並べたもの）があれば、続けてテストします。本体で定義した名前（関数・変数）が見えます。`-o out.ko` で変換結果を `.ko` 形式で書けます。
 - `kolang conv` は、**文書の中の複数のコードブロック**も変換できます。入力が `.md`、または ```` ```シンタックス ```` のブロックが 2 個以上ある `.ko` で `-t` を付けると、各ブロックを変換し（開きのフェンスも `-t` のシンタックスに書き換わる）、ブロックの外の文章はそのまま出力します。info string がシンタックスとして読めないブロック（```` ```python ```` ```` ```bash ```` など）は触りません。`-f` があれば、info string のあるブロックすべてを `-f` で読みます。`-t` を省略すると各ブロックが読めるかだけ検査し（`OK: N 個のコードブロック`）、変換できるブロックが 1 つもなければエラーです。ブロックが 1 個だけの `.ko` は従来どおり（コードだけを出力。`-o x.ko` なら ```` ```dst ```` で包む）です。
-- `kolang cov FILE...` は、プログラムが使っている構文と標準ライブラリ関数の回数を、全ファイル合計で数えます（`.ko` なら `-f` は不要、ほかは `-f SYNTAX`、既定は pylike）。構文は AST のノードの種類で数え、比較は演算子ごと（`Compare(==)`）です。標準ライブラリは標準名（pylike の名前）で数え、ja など別のシンタックスで書いても同じ名前に集まります。0 回のものも `← 未使用` と出し、最後に `カバー n/m` を表示するので、`examples/` のお手本が構文と標準ライブラリを漏れなく使っているかの確認に使えます。doctest の式と、プログラムが自作した同名の関数は数えません。
+- `kolang cov FILE...` は、プログラムが使っている構文と標準ライブラリ関数の回数を、全ファイル合計で数えます（`.ko` なら `-f` は不要、ほかは `-f SYNTAX`、既定は pylike）。構文は AST のノードの種類で数え、比較は演算子ごと（`Compare(==)`）です。標準ライブラリは標準名（pylike の名前）で数え、jalike など別のシンタックスで書いても同じ名前に集まります。0 回のものも `← 未使用` と出し、最後に `カバー n/m` を表示するので、`examples/` のお手本が構文と標準ライブラリを漏れなく使っているかの確認に使えます。doctest の式と、プログラムが自作した同名の関数は数えません。
 - `kolang eval SYNTAX` は、`kolang/kolangeval.jsonl`（HumanEval から作った 164 問。`prompt` `doctest` `pylike`（正解コード）など）の `pylike` を SYNTAX に変換して読み直し、`doctest` で動作を確かめて pass@1 を出します。`-i FILE` で別の jsonl、`-t 0 1` で問題を絞り、`-d 1`（`difficulty` が 1 の問題だけ。複数可）でも絞り、`-q` で不合格だけ表示します。`pylike` のない問題は `SKIP` とし、分母に入れません。終了コードは 0 が全合格、1 が不合格あり。Python からは `kolang.kolangeval` の `evaluate(syntax, problems, solver)` で、`solver(problem, syntax) -> code` を差し替えると、変換の代わりにモデルが生成したコードを採点できます。
 
   `--model NAME`（Hugging Face のモデル。torch / transformers が要る。`claude-` で始まる名前は Anthropic API で呼ぶ。`ANTHROPIC_API_KEY` が要り、`claude-haiku-5.5` のように `.` で書いても `claude-haiku-5-5` として扱う。Claude には書き出しの固定を assistant の prefill でなくユーザーメッセージの指示で渡し、temperature は指定しない）を付けると、正解の変換の代わりに、モデルに各問の `prompt` を渡してコードを生成させ、同じ採点をします。システムメッセージに入れる言語の説明は `--context FILE`（中身をそのまま使う）で、なければ `kolang/examples/*.ko` を SYNTAX に変換して並べたものです。`--context snippet` なら、その並びに続けて `snippet.SNIPPETS`（構文ごとの小さな例。`kolang show_snippet` と同じもの。SYNTAX で書けないものは省く）も並べます。`--context none` なら何も足さず（空のコンテキスト。システムメッセージなし）、`--context ebnf` なら `kolang show_ebnf SYNTAX` の BNF を並べ、`--context snippet,ebnf` で両方です。生成は貪欲（`do_sample=False`、最大 1024 トークン）で、出力の ``` で囲まれたコードを取り出します。結果は 1 問 1 行の jsonl（`task_id` `model` `syntax` `prompt` `output`（モデルの生の出力）`input_tokens`（入力。チャットテンプレートと書き出しを含む）`output_tokens`（新しく生成した分）`code`（取り出したコード）`doctest`（`ok` `passed` `total`）`error_message`（失敗の理由。なければ null））で、`-o FILE`（既定は `results/kolangeval_<syntax>_<model>.jsonl`（`results/` は自動で作る。`-d 1` なら `_d1`、`-d 1 3` なら `_d1_3` が付く）。英数字と `.` `_` `-` 以外は `_` にする。`-o -` なら標準出力）に出し、pass@1 の要約は標準エラーに出ます。`--context` と `-o` は `--model` のときだけ使えます。
-- `kolang modelppl` は、`modelppl.csv` の第一カラム `syntax` のシンタックスについて、`NLL, tok, char, PPL, bpc` を計算して埋めます（ファイルがなければ、4 つの組み込みシンタックスで新規作成）。既定のモデルは `Qwen/Qwen2.5-Coder-1.5B-Instruct`（`-m` で変更）。詳しくは [modelppl.md](modelppl.md)。
+- `kolang modelppl SYNTAX...` は、指定したシンタックスの `NLL, tokens, PPL, bpc` を計算し、`modelppl.csv`（列は `model, syntax, NLL, tokens, PPL, bpc`）に書きます。既定のモデルは `Qwen/Qwen2.5-Coder-1.5B-Instruct`（`--model` で変更）。詳しくは [modelppl.md](modelppl.md)。
 - `kolang run` の終了コードは、0 が成功、1 が実行時エラーか doctest の不一致、2 が使い方の誤りです。
 
 ## 実行する
@@ -101,10 +101,10 @@ doctest: 1 passed, 0 failed
 | `int` `str` `float` `bool` | 型の変換 |
 | `abs` `chr` `len` `list` `max` `min` `ord` `range` `round` `sorted` `sum` | Python の同名の組み込み関数 |
 
-関数の名前は、シンタックスの JSON の `stdlib`（`{"print": "表示"}` の形）で変えられます。`ja.json` は漢字です（`表示` `足し算` `引き算` `掛け算` `割り算` `余り` `べき乗` `整数化` `文字列化` `小数化` `ブール化`）。
+関数の名前は、シンタックスの JSON の `stdlib`（`{"print": "表示"}` の形）で変えられます。`jalike.json` は漢字です（`表示` `足し算` `引き算` `掛け算` `割り算` `余り` `べき乗` `整数化` `文字列化` `小数化` `ブール化`）。
 
 ```
-$ echo 'print(add(1, 2))' | kolang conv -f pylike -t ja
+$ echo 'print(add(1, 2))' | kolang conv -f pylike -t jalike
 表示（足し算（1、2））
 ```
 
@@ -119,7 +119,7 @@ $ echo 'print(add(1, 2))' | kolang conv -f pylike -t ja
 [1, "a", null]
 ```
 
-標準関数は pylike の名前（標準名）で書きます。ja で読むと `add` は `足し算` になります（プログラムが同じ名前を自分で定義していれば、そちらが優先。`.doctest` の別ファイルでも、本体の自作の名前が優先）。
+標準関数は pylike の名前（標準名）で書きます。jalike で読むと `add` は `足し算` になります（プログラムが同じ名前を自分で定義していれば、そちらが優先。`.doctest` の別ファイルでも、本体の自作の名前が優先）。
 
 型まで厳密に比べます（`1` と `true` と `1.0` は別）。
 
@@ -130,8 +130,8 @@ import kolang
 from kolang.pyeval import run
 
 tree = kolang.parse("x = [1, 2]\n", "pylike")          # → AST（kolang.ast）
-kolang.unparse(tree, "ja")                              # → "xに【1, 2】を代入\n"
-kolang.convert("print(1)\n", "pylike", "ja")            # → "表示（1）\n"
+kolang.unparse(tree, "jalike")                              # → "[1, 2]をxに代入\n"
+kolang.convert("print(1)\n", "pylike", "jalike")            # → "表示（1）\n"
 interp = run("x = add(1, 2)\n>>> x\n3\n")              # 実行。interp.globals.vars、interp.doctests
 ```
 
@@ -151,7 +151,7 @@ interp = run("x = add(1, 2)\n>>> x\n3\n")              # 実行。interp.globals
 | 名前 | 特徴 |
 |---|---|
 | `pylike` | Python 風。インデントでブロックを表す |
-| `ja` | 日本語風。ブロックは `『 』`。名前は英数字、漢字などは `_` で囲む（`_合計_`） |
+| `jalike` | 日本語風。ブロックは `『 』`。名前は英数字、漢字などは `_` で囲む（`_合計_`） |
 | `lisplike` | Lisp 風。S 式。配列の添字は `(get x i)` |
 | `jslike` | JavaScript 風。`{ }` と `;`（省略可）、`xs.push(1)`、`x++`、`function`。最上位は括らない |
 
@@ -166,7 +166,7 @@ interp = run("x = add(1, 2)\n>>> x\n3\n")              # 実行。interp.globals
 
 ## シンタックスを作る
 
-`kolang/syntaxes/` に JSON を置きます（または JSON のパスを直接指定します）。`pylike.json`、`ja.json`、`lisplike.json`、`jslike.json` が実例です。全キーの詳しい書き方は [syntax.md](syntax.md) にあります。
+`kolang/syntaxes/` に JSON を置きます（または JSON のパスを直接指定します）。`pylike.json`、`jalike.json`、`lisplike.json`、`jslike.json` が実例です。全キーの詳しい書き方は [syntax.md](syntax.md) にあります。
 
 ```jsonc
 {
@@ -204,16 +204,16 @@ interp = run("x = add(1, 2)\n>>> x\n3\n")              # 実行。interp.globals
 
 `kolang --show 名前` で、作ったシンタックスの書き方の例を確認できます（Python 風の例を、そのシンタックスへ変換して表示します）。
 
-`kolang show_snippet SYNTAX [NAME...]` は、カスケードの検査に使うスニペット（`kolang/snippet.py` の `SNIPPETS`。入れ子・連続した区切りなど、衝突しやすい形）を、そのシンタックスで書いて表示します。`--show` より細かい形（添字の中の関数呼び出し、`-` の連続など）が見られ、カスケードでも使えます（`kolang show_snippet "ja:pylike(funcapp)"`）。名前を渡すと、そのスニペットだけ表示します（`kolang show_snippet ja index_by_call`）。そのシンタックスで書けないものは、理由つきで知らせます。
+`kolang show_snippet SYNTAX [NAME...]` は、カスケードの検査に使うスニペット（`kolang/snippet.py` の `SNIPPETS`。入れ子・連続した区切りなど、衝突しやすい形）を、そのシンタックスで書いて表示します。`--show` より細かい形（添字の中の関数呼び出し、`-` の連続など）が見られ、カスケードでも使えます（`kolang show_snippet "jalike:pylike(funcapp)"`）。名前を渡すと、そのスニペットだけ表示します（`kolang show_snippet jalike index_by_call`）。そのシンタックスで書けないものは、理由つきで知らせます。
 
-`kolang show_ebnf SYNTAX` は、`kolang.md` の規則を、そのシンタックスの記号に置き換えた BNF を表示します（空の記号は省き、`call` の順序・添字の形・`toplevel`・省略可の `neg` / `grouping` の有無も反映します。固定の文字列でない記号は、最後に正規表現を載せます）。見出しと注釈は、モデルに渡しやすいよう簡単な英語で書きます（記号そのものはシンタックスの文字のまま。例: `<variable> "に" <expression> "を代入"   # assignment`）。カスケードも指定できます。
+`kolang show_ebnf SYNTAX` は、`kolang.md` の規則を、そのシンタックスの記号に置き換えた BNF を表示します（空の記号は省き、`call` の順序・添字の形・`toplevel`・省略可の `neg` / `grouping` の有無も反映します。固定の文字列でない記号は、最後に正規表現を載せます）。見出しと注釈は、モデルに渡しやすいよう簡単な英語で書きます（記号そのものはシンタックスの文字のまま。例: `<expression> "を" <variable> "に代入"   # assignment (assign: value_first)`）。カスケードも指定できます。
 
 ### カスケード（一部だけ差し替える）
 
 シンタックスの指定を `ベース:取り込み元(グループ,…)` と書くと、ベースのうち、指定したグループだけを取り込み元のものに差し替えます。`:` でいくつでもつなげられ、左から順に重ねます。
 
 ```
-kolang conv -f pylike -t 'ja:jslike(assign,block,funcapp,stdlib)'
+kolang conv -f pylike -t 'jalike:jslike(assign,block,funcapp,stdlib)'
 ```
 
 これは、日本語風をベースに、代入・ブロック・関数呼び出し・標準ライブラリ関数の名前だけを JavaScript 風にしたものです。グループは、`assign` `block` `funcapp` `if` `condition` `literal` `list` `index` `quote` `def` `comment` `space` `stdlib` などです（全部は [syntax.md](syntax.md)）。`block` は `layout` も一緒に取り込みます。
@@ -259,7 +259,7 @@ python3 -m unittest discover -s tests -t .
 
 評価器のテスト（`tests/test_pyeval.py`）は、同じソースを Python で実行した結果と比べます。`tests/test_modelppl.py` は、モデルを使わず偽の採点関数で確かめます。
 
-カスケードの全順列（744 通り）の検査は遅いので、既定ではスキップします（`KOLANG_MATRIX=1`）。特定の組み合わせだけなら `python3 -m tests.test_cascade_matrix "ja:jslike(block)"` です。
+カスケードの全順列（744 通り）の検査は遅いので、既定ではスキップします（`KOLANG_MATRIX=1`）。特定の組み合わせだけなら `python3 -m tests.test_cascade_matrix "jalike:jslike(block)"` です。
 
 ## 制約
 

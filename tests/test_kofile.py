@@ -8,8 +8,8 @@ from tests.test_cli import run
 
 class Split(unittest.TestCase):
     def test_split(self):
-        spec, code = split_ko("```ja:jslike(assign)\nx = 1;\n```\n後ろは読まない\n")
-        self.assertEqual(spec, "ja:jslike(assign)")
+        spec, code = split_ko("```jalike:jslike(assign)\nx = 1;\n```\n後ろは読まない\n")
+        self.assertEqual(spec, "jalike:jslike(assign)")
         self.assertEqual(code, "x = 1;\n")
 
     def test_errors(self):
@@ -41,18 +41,18 @@ class Cli(unittest.TestCase):
         path = self.write("a.ko", "```pylike\nx = 1\n```\n")
         self.assertEqual(run("conv", path)[0], 0)
         out_path = os.path.join(self.dir.name, "b.ko")
-        self.assertEqual(run("conv", path, "-t", "ja", "-o", out_path)[0], 0)
+        self.assertEqual(run("conv", path, "-t", "jalike", "-o", out_path)[0], 0)
         with open(out_path, encoding="utf-8") as f:
             text = f.read()
-        self.assertTrue(text.startswith("```ja\n") and text.endswith("\n```\n"))
+        self.assertTrue(text.startswith("```jalike\n") and text.endswith("\n```\n"))
         self.assertEqual(run("run", out_path)[0], 0)
 
     def test_convert_multiple_blocks(self):
         doc = "# 題\n\n```pylike\nx = 1\n```\n\n文章\n\n```bash\nls\n```\n\n```pylike\ny = 2\n```\n"
         path = self.write("doc.ko", doc)
-        code, out, _ = run("conv", path, "-t", "ja")
+        code, out, _ = run("conv", path, "-t", "jalike")
         self.assertEqual(code, 0)
-        self.assertEqual(out.count("```ja\n"), 2)
+        self.assertEqual(out.count("```jalike\n"), 2)
         self.assertIn("# 題", out)
         self.assertIn("文章", out)
         self.assertIn("```bash\nls\n```", out)
@@ -60,9 +60,9 @@ class Cli(unittest.TestCase):
 
     def test_convert_markdown(self):
         path = self.write("doc.md", "# 題\n\n```pylike\nx = 1\n```\n\n```python\nx = 1\n```\n")
-        code, out, _ = run("conv", path, "-t", "ja")
+        code, out, _ = run("conv", path, "-t", "jalike")
         self.assertEqual(code, 0)
-        self.assertIn("```ja\nxに1を代入\n```", out)
+        self.assertIn("```jalike\n1をxに代入\n```", out)
         self.assertIn("```python\nx = 1\n```", out)
         code, out, _ = run("conv", path)
         self.assertEqual((code, out), (0, "OK: 1 個のコードブロック\n"))
@@ -85,10 +85,10 @@ class Cli(unittest.TestCase):
         self.assertIn("1 failed", err)
 
     def test_sibling_doctest_sees_own_names(self):
-        # ja の標準名 add は「足し算」だが、本体が add を定義していれば、.doctest の add は自作
+        # jalike の標準名 add は「足し算」だが、本体が add を定義していれば、.doctest の add は自作
         from kolang import convert
-        body = convert("def add(a):\n    return a\n", "pylike", "ja")
-        path = self.write("a.ko", f"```ja\n{body}```\n")
+        body = convert("def add(a):\n    return a\n", "pylike", "jalike")
+        path = self.write("a.ko", f"```jalike\n{body}```\n")
         self.write("a.doctest", ">>> add(5)\n5\n")
         code, _, err = run("run", path)
         self.assertEqual((code, "1 passed, 0 failed" in err), (0, True))

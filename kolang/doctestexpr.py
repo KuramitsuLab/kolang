@@ -4,7 +4,7 @@
 こうしておけば、シンタックスを変えても同じ doctest がそのまま読める。
 
 標準ライブラリ関数の名前だけは、書き方（pylike の名前 = 標準名）と、AST の名前（そのシンタックスでの名前）が違いうる
-（ja の `add` ↔ `足し算`）。構文解析のあとで localize_doctests が、AST の名前にする。出力器は逆（delocalize）。
+（jalike の `add` ↔ `足し算`）。構文解析のあとで localize_doctests が、AST の名前にする。出力器は逆（delocalize）。
 プログラムが同じ名前を自分で定義しているものは、自作なので書き換えない（rename_stdlib と同じ）。
 """
 

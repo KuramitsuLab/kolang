@@ -28,15 +28,15 @@ PY = (
 # ブロックは 『 』。コメントのある行は改行で終わるので、その続きは次の行から。
 JA = (
     "※ head\n"
-    "xに1を代入 ※ tail\n"
+    "1をxに代入 ※ tail\n"
     "もしxが1と等しいなら ※ header\n"
     "『\n"
     "    ※ lead\n"
-    "    yに2を代入\n"
+    "    2をyに代入\n"
     "』そうでなければ『\n"
     "    ※ before else\n"
     "    ※ on else\n"
-    "    yに3を代入\n"
+    "    3をyに代入\n"
     "』\n"
     "2回くり返す ※ loop\n"
     "『\n"
@@ -91,30 +91,30 @@ class Attach(unittest.TestCase):
         self.assertEqual(parse("#\nx = 1 #\n").stmts[0].comments, K.Comments(("",), ""))
 
     def test_japanese_syntax(self):
-        self.assertEqual(comments(JA, "ja"), comments(PY, "pylike"))
+        self.assertEqual(comments(JA, "jalike"), comments(PY, "pylike"))
 
 
 class Convert(unittest.TestCase):
     def test_pylike_to_ja(self):
         # else の行のコメントは else の中の最初の文の前に移る（見出しにコメントを持てないため）
-        self.assertEqual(convert(PY, "pylike", "ja"), JA)
+        self.assertEqual(convert(PY, "pylike", "jalike"), JA)
 
     def test_ja_to_pylike_keeps_comments_but_normalizes_spacing(self):
-        text = convert(JA, "ja", "pylike")
-        self.assertEqual(comments(text, "pylike"), comments(JA, "ja"))
+        text = convert(JA, "jalike", "pylike")
+        self.assertEqual(comments(text, "pylike"), comments(JA, "jalike"))
         self.assertIn("x = 1 # tail\n", text)
 
     def test_round_trip_keeps_everything(self):
-        for source, name, other in ((PY, "pylike", "ja"), (JA, "ja", "pylike")):
+        for source, name, other in ((PY, "pylike", "jalike"), (JA, "jalike", "pylike")):
             there = convert(source, name, other)
             back = convert(there, other, name)
             self.assertEqual(comments(back, name), comments(source, name))
 
     def test_target_without_comments_drops_them(self):
-        data = json.loads((SYNTAX_DIR / "ja.json").read_text(encoding="utf-8"))
+        data = json.loads((SYNTAX_DIR / "jalike.json").read_text(encoding="utf-8"))
         data["tokens"].pop("comment")
         plain = syntax_from_dict(data)
-        self.assertEqual(convert("# a\nx = 1 # b\n", "pylike", plain), "xに1を代入\n")
+        self.assertEqual(convert("# a\nx = 1 # b\n", "pylike", plain), "1をxに代入\n")
 
     def test_multiline_comment_becomes_lines_or_joins(self):
         tree = K.Block((K.Assign(K.Var("x"), K.Num(1),
@@ -139,7 +139,7 @@ class BlockCommentSyntax(unittest.TestCase):
         text = convert(PY, "pylike", brace)
         self.assertIn("/* head */", text)
         self.assertEqual(comments(text, brace), comments(PY, "pylike"))
-        self.assertEqual(comments(convert(text, brace, "ja"), "ja"), comments(PY, "pylike"))
+        self.assertEqual(comments(convert(text, brace, "jalike"), "jalike"), comments(PY, "pylike"))
 
     def test_multiline_block_comment_to_pylike(self):
         brace = self.syntax()

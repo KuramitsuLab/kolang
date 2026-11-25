@@ -34,15 +34,15 @@ class Show(unittest.TestCase):
         self.assertIn("予約語: append break dec def else false get if inc list neg nil repeat return set true", out)
 
     def test_show_ja_and_pylike(self):
-        _, out, _ = run("--show", "ja")
-        self.assertIn("  xに1を代入", out)
+        _, out, _ = run("--show", "jalike")
+        self.assertIn("  1をxに代入", out)
         self.assertIn("  ※ コメント", out)
         _, out, _ = run("--show", "pylike")
         self.assertIn("  x = 1", out)
         self.assertIn("  for _ in range(3):\n      x += 1", out)
 
     def test_every_builtin_syntax_can_show_every_example(self):
-        for name in ("pylike", "ja", "lisplike", "jslike"):
+        for name in ("pylike", "jalike", "lisplike", "jslike"):
             with self.subTest(name=name):
                 code, out, _ = run("--show", name)
                 self.assertEqual(code, 0)
@@ -50,9 +50,9 @@ class Show(unittest.TestCase):
 
     def test_show_snippet(self):
         from kolang.snippet import SNIPPETS
-        code, out, _ = run("show_snippet", "ja")
+        code, out, _ = run("show_snippet", "jalike")
         self.assertEqual(code, 0)
-        self.assertTrue(out.startswith("ja\n"))
+        self.assertTrue(out.startswith("jalike\n"))
         for name in SNIPPETS:
             self.assertIn(f"■ {name}\n", out)
         self.assertNotIn("書けません", out)
@@ -62,18 +62,18 @@ class Show(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(out.count("■"), 2)
         self.assertIn("(set x 1)", out)
-        code, _, err = run("show_snippet", "ja", "nope")
+        code, _, err = run("show_snippet", "jalike", "nope")
         self.assertEqual(code, 1)
         self.assertIn("nope", err)
-        code, out, _ = run("show_snippet", "ja", "--list")
+        code, out, _ = run("show_snippet", "jalike", "--list")
         self.assertEqual(code, 0)
         self.assertIn("assign\n", out)
 
     def test_show_ebnf(self):
-        code, out, _ = run("show_ebnf", "ja")
+        code, out, _ = run("show_ebnf", "jalike")
         self.assertEqual(code, 0)
         for line in ('"『" (<doctest> | <statement>)* "』"',          # ブロックは 『 』（空の block_sep は書かない）
-                     '<variable> "に" <expression> "を代入"',
+                     '<expression> "を" <variable> "に代入"',
                      '"(" (<expression> ",")* ")における" <identifier> "の値"',   # call: args_first
                      '<variable> "の(" <expression> ")番目"',
                      '"-" <expression>', '<grouping>'):
@@ -83,7 +83,7 @@ class Show(unittest.TestCase):
         self.assertNotIn("<grouping>", out)                         # 括弧のないシンタックスは出さない
         _, out, _ = run("show_ebnf", "pylike")
         self.assertIn("INDENT (<doctest> | <statement> NEWLINE)* DEDENT", out)
-        for name in ("pylike", "ja", "lisplike", "jslike", "ja:jslike(block)"):
+        for name in ("pylike", "jalike", "lisplike", "jslike", "jalike:jslike(block)"):
             self.assertEqual(run("show_ebnf", name)[0], 0)
         self.assertEqual(run("show_ebnf", "nope")[0], 1)
 
@@ -96,7 +96,7 @@ class Show(unittest.TestCase):
     def test_list(self):
         code, out, _ = run("--list")
         self.assertEqual(code, 0)
-        for name in ("pylike", "ja", "lisplike", "jslike"):
+        for name in ("pylike", "jalike", "lisplike", "jslike"):
             self.assertIn(name, out)
 
 
@@ -111,8 +111,8 @@ class Run(unittest.TestCase):
             with open(path, "w", encoding="utf-8") as f:
                 f.write("(set x 1)\n(print x)\n")
             self.assertEqual(run("run", path, "-f", "lisplike")[:2], (0, "1\n"))
-            code, out, _ = run("run", "-f", "ja:jslike(assign,block,funcapp,stdlib)",
-                              stdin="x = 【1】;\nprint(x);\n")
+            code, out, _ = run("run", "-f", "jalike:jslike(assign,block,funcapp,stdlib)",
+                              stdin="x = [1];\nprint(x);\n")
             self.assertEqual((code, out), (0, "[1]\n"))
 
     def test_runtime_error(self):
@@ -205,10 +205,10 @@ class Convert(unittest.TestCase):
 
     def test_file_and_output_file(self):
         with tempfile.TemporaryDirectory() as d:
-            src, dst = os.path.join(d, "a.ja"), os.path.join(d, "a.py")
+            src, dst = os.path.join(d, "a.jalike"), os.path.join(d, "a.py")
             with open(src, "w", encoding="utf-8") as f:
-                f.write("※ 注\nxに1を代入\n")
-            code, out, _ = run("conv", src, "--from", "ja", "--to", "pylike", "-o", dst)
+                f.write("※ 注\n1をxに代入\n")
+            code, out, _ = run("conv", src, "--from", "jalike", "--to", "pylike", "-o", dst)
             self.assertEqual((code, out), (0, ""))
             with open(dst, encoding="utf-8") as f:
                 self.assertEqual(f.read(), "# 注\nx = 1\n")
@@ -219,11 +219,11 @@ class Convert(unittest.TestCase):
 
     def test_syntax_given_as_json_path(self):
         from kolang.syntax import SYNTAX_DIR
-        code, out, _ = run("conv", "-f", "pylike", "-t", str(SYNTAX_DIR / "ja.json"), stdin="x = 1\n")
-        self.assertEqual((code, out), (0, "xに1を代入\n"))
+        code, out, _ = run("conv", "-f", "pylike", "-t", str(SYNTAX_DIR / "jalike.json"), stdin="x = 1\n")
+        self.assertEqual((code, out), (0, "1をxに代入\n"))
 
     def test_errors(self):
-        code, out, err = run("conv", "-f", "pylike", "-t", "ja", stdin="x = = 1\n")
+        code, out, err = run("conv", "-f", "pylike", "-t", "jalike", stdin="x = = 1\n")
         self.assertEqual((code, out), (1, ""))
         self.assertIn("1:5", err)
         code, _, err = run("conv", "-f", "pylike", "-t", "nope", stdin="x = 1\n")
@@ -238,7 +238,7 @@ class Convert(unittest.TestCase):
         self.assertIn("--show", out)
 
     def test_file_without_from_is_an_error(self):
-        code, _, err = run("conv", "-t", "ja", stdin="x = 1\n")
+        code, _, err = run("conv", "-t", "jalike", stdin="x = 1\n")
         self.assertEqual(code, 2)
         self.assertIn("--from", err)
 
@@ -251,25 +251,25 @@ class Conv(unittest.TestCase):
     """サブコマンド kolang conv。conv を省いた古い書き方はない。"""
 
     def test_old_style_without_conv_is_gone(self):
-        self.assertEqual(run("-f", "pylike", "-t", "ja", stdin="x = 1\n")[0], 2)
+        self.assertEqual(run("-f", "pylike", "-t", "jalike", stdin="x = 1\n")[0], 2)
 
     def test_conv_stdin(self):
-        code, out, _ = run("conv", "-f", "pylike", "-t", "ja", stdin="x = 1\n")
-        self.assertEqual((code, out), (0, "xに1を代入\n"))
+        code, out, _ = run("conv", "-f", "pylike", "-t", "jalike", stdin="x = 1\n")
+        self.assertEqual((code, out), (0, "1をxに代入\n"))
 
     def test_conv_ko_needs_no_from(self):
         with tempfile.TemporaryDirectory() as d:
             src, dst = os.path.join(d, "p.ko"), os.path.join(d, "q.ko")
             with open(src, "w", encoding="utf-8") as f:
                 f.write("```pylike\nx = 1\n```\n")
-            self.assertEqual(run("conv", src, "-t", "ja")[:2], (0, "xに1を代入\n"))
-            self.assertEqual(run("conv", src, "-t", "ja", "-o", dst)[0], 0)
+            self.assertEqual(run("conv", src, "-t", "jalike")[:2], (0, "1をxに代入\n"))
+            self.assertEqual(run("conv", src, "-t", "jalike", "-o", dst)[0], 0)
             with open(dst, encoding="utf-8") as f:
-                self.assertEqual(f.read(), "```ja\nxに1を代入\n```\n")
+                self.assertEqual(f.read(), "```jalike\n1をxに代入\n```\n")
 
     def test_conv_check_only_and_missing_from(self):
         self.assertEqual(run("conv", "-f", "pylike", stdin="x = 1\n")[:2], (0, "OK: 1 個の文\n"))
-        self.assertEqual(run("conv", "-t", "ja", stdin="x = 1\n")[0], 2)
+        self.assertEqual(run("conv", "-t", "jalike", stdin="x = 1\n")[0], 2)
 
     def test_conv_help(self):
         code, out, _ = run("conv", "-h")

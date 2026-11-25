@@ -9,13 +9,13 @@
     PPL   : exp(NLL / tok)
     bpc   : bits per char = NLL / (文字数 * ln 2)。トークナイザの違いをならした指標
 
-    python3 -m kolang.modelppl                              pylike ja lisplike jslike を既定モデルで
-    python3 -m kolang.modelppl -m allenai/OLMo-2-0425-1B -s pylike ja "ja:jslike(assign)"
-    python3 -m kolang.modelppl --snippets assign,index --show   出力したコードも見る
-    python3 -m kolang.modelppl --json out.json              結果を JSON でも保存
-    kolang modelppl                                         同じ（サブコマンド）
+    kolang modelppl pylike jalike lisplike jslike           既定モデルで
+    kolang modelppl -m allenai/OLMo-2-0425-1B pylike "jalike:jslike(assign)"
+    kolang modelppl pylike --snippets assign,index --show   出力したコードも見る
+    kolang modelppl pylike --json out.json                  結果を JSON でも保存
+    python3 -m kolang.modelppl SYNTAX...                    同じ
 
-結果は CSV（既定 modelppl.csv）にも書く。詳しくは modelppl.md。
+結果は CSV（既定 modelppl.csv。列は model, syntax, NLL, tokens, PPL, bpc）に書く。詳しくは modelppl.md。
 
 torch / transformers は計測するときだけ読む（import は遅延）。
 """
@@ -35,7 +35,7 @@ from .snippet import SNIPPETS
 from .syntax import load_syntax
 from .unparser import unparse
 
-DEFAULT_SYNTAXES = ("pylike", "ja", "lisplike", "jslike")
+DEFAULT_SYNTAXES = ("pylike", "jalike", "lisplike", "jslike")
 DEFAULT_MODEL = "Qwen/Qwen2.5-Coder-1.5B-Instruct"
 
 # 1 つのテキストを採点する関数: text → (NLL の合計 nats, 予測したトークン数)
@@ -152,47 +152,50 @@ def format_report(results: Sequence[Result], syntaxes: Sequence[str], show: bool
 
 
 CSV_DEFAULT = "modelppl.csv"
-CSV_COLUMNS = ("NLL", "tok", "char", "PPL", "bpc")     # 第一カラム syntax のあとに書く列
+CSV_COLUMNS = ("model", "syntax", "NLL", "tokens", "PPL", "bpc")
 
 
-def read_csv(path: str) -> "tuple[list, list]":
-    """CSV を (ヘッダ, 行の辞書のリスト) で返す。第一カラムがシンタックス。空の行は捨てる。"""
+def read_csv(path: str) -> "list[dict]":
+    """CSV の行（辞書）を返す。model 列のない古い形式は、既定モデルで測ったものとして読む。"""
     with open(path, encoding="utf-8", newline="") as f:
-        rows = [r for r in csv.reader(f) if any(c.strip() for c in r)]
-    if not rows:
-        return ["syntax"], []
-    header = [h.strip() for h in rows[0]]
-    return header, [dict(zip(header, r)) for r in rows[1:] if r[0].strip()]
+        rows = [r for r in csv.DictReader(f) if (r.get("syntax") or "").strip()]
+    for r in rows:
+        if not r.get("model"):
+            r["model"] = DEFAULT_MODEL
+        if not r.get("tokens"):
+            r["tokens"] = r.get("tok", "")
+    return rows
 
 
-def write_csv(path: str, header: Sequence[str], rows: Sequence[dict], summary: Sequence[dict]) -> None:
-    """第一カラムのシンタックスごとに、NLL tok char PPL bpc を埋めて書く。ほかの列はそのまま残す。"""
-    by = {r["syntax"]: r for r in summary}
-    header = list(header)
-    for c in CSV_COLUMNS:
-        if c not in header:
-            header.append(c)
-    key = header[0]
+def write_csv(path: str, model: str, summary: Sequence[dict]) -> None:
+    """(model, syntax) をキーに、model, syntax, NLL, tokens, PPL, bpc を書く。
+    すでにある行は置き換え、ほかのモデル・シンタックスの行はそのまま残す。"""
+    rows = read_csv(path) if os.path.exists(path) else []
+    for r in summary:
+        new = {"model": model, "syntax": r["syntax"], "NLL": f"{r['nll']:.2f}", "tokens": r["tokens"],
+               "PPL": f"{r['ppl']:.3f}", "bpc": f"{r['bpc']:.4f}"}
+        for i, old in enumerate(rows):
+            if old["model"] == model and old["syntax"].strip() == r["syntax"]:
+                rows[i] = new
+                break
+        else:
+            rows.append(new)
     with open(path, "w", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
-        w.writerow(header)
+        w.writerow(CSV_COLUMNS)
         for row in rows:
-            r = by[row[key].strip()]
-            row = dict(row, **{"NLL": f"{r['nll']:.2f}", "tok": r["tokens"], "char": r["chars"],
-                               "PPL": f"{r['ppl']:.3f}", "bpc": f"{r['bpc']:.4f}"})
-            w.writerow([row.get(h, "") for h in header])
+            w.writerow([row.get(c, "") for c in CSV_COLUMNS])
 
 
 def main(argv: Optional[Sequence[str]] = None, scorer: Optional[Scorer] = None,
          prog: str = "modelppl") -> int:
     ap = argparse.ArgumentParser(prog=prog, description="シンタックスごとの LLM パープレキシティを測る")
-    ap.add_argument("-s", "--syntaxes", nargs="+", default=None,
-                    help="シンタックス名（カスケード可: ja:jslike(assign)）。"
-                         "既定は CSV の第一カラム。CSV がなければ pylike ja lisplike jslike")
+    ap.add_argument("syntaxes", nargs="*", metavar="SYNTAX",
+                    help="シンタックス名（カスケード可: jalike:jslike(assign)）。複数なら全部で出力できたスニペットだけで比べる")
     ap.add_argument("--csv", default=CSV_DEFAULT, metavar="FILE",
-                    help=f"結果の CSV（既定 {CSV_DEFAULT}）。あれば第一カラムのシンタックスを測って埋め、なければ新規作成")
-    ap.add_argument("--no-csv", action="store_true", help="CSV を読み書きしない")
-    ap.add_argument("-m", "--model", default=DEFAULT_MODEL, help="Hugging Face のモデル名（既定 Qwen/Qwen2.5-Coder-1.5B-Instruct）")
+                    help=f"結果の CSV（既定 {CSV_DEFAULT}。列は {', '.join(CSV_COLUMNS)}）。(model, syntax) の行を置き換え、なければ足す")
+    ap.add_argument("--no-csv", action="store_true", help="CSV に書かない")
+    ap.add_argument("-m", "--model", default=DEFAULT_MODEL, help=f"Hugging Face のモデル名（既定 {DEFAULT_MODEL}）")
     ap.add_argument("--device", default=None, help="cpu / cuda / mps（既定は自動）")
     ap.add_argument("--snippets", default=None, help="スニペット名をカンマ区切りで（既定は全部）")
     ap.add_argument("--list-snippets", action="store_true", help="スニペット名の一覧を出して終わる")
@@ -204,17 +207,9 @@ def main(argv: Optional[Sequence[str]] = None, scorer: Optional[Scorer] = None,
         print("\n".join(SNIPPETS))
         return 0
     names = args.snippets.split(",") if args.snippets else None
-
-    header, rows = ["syntax"], []
-    if not args.no_csv and os.path.exists(args.csv):
-        header, rows = read_csv(args.csv)
-    syntaxes = [r[header[0]].strip() for r in rows]
-    for sp in (args.syntaxes or ([] if syntaxes else DEFAULT_SYNTAXES)):    # -s は CSV にない分を足す
-        if sp not in syntaxes:
-            syntaxes.append(sp)
-            rows.append({header[0]: sp})
+    syntaxes = list(dict.fromkeys(args.syntaxes))
     if not syntaxes:
-        print("エラー: 測るシンタックスがない", file=sys.stderr)
+        print("エラー: SYNTAX を指定する（例: kolang modelppl pylike jalike）", file=sys.stderr)
         return 2
     if scorer is None:
         print(f"モデルを読み込み中: {args.model}", file=sys.stderr)
@@ -226,7 +221,7 @@ def main(argv: Optional[Sequence[str]] = None, scorer: Optional[Scorer] = None,
         return 2
     print(format_report(results, syntaxes, args.show))
     if not args.no_csv:
-        write_csv(args.csv, header, rows, summarize(results, syntaxes))
+        write_csv(args.csv, args.model, summarize(results, syntaxes))
         print(f"CSV: {args.csv}", file=sys.stderr)
     if args.json:
         with open(args.json, "w", encoding="utf-8") as f:

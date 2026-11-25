@@ -2,17 +2,17 @@
 
     kolang --list                          使えるシンタックスの一覧
     kolang --show lisplike                 書き方の例
-    kolang show_snippet ja [NAME...]       スニペット（カスケード検査用の AST。snippet.py）をそのシンタックスで表示
-    kolang show_ebnf ja                    そのシンタックスの BNF（kolang.md の規則を、そのシンタックスの記号で）
-    kolang conv prog.py -f pylike -t ja    シンタックスの変換（ファイルなしなら標準入力、-o で出力先）
-    kolang conv prog.ko -t ja              .ko なら -f は不要（1 行目で指定）
+    kolang show_snippet jalike [NAME...]       スニペット（カスケード検査用の AST。snippet.py）をそのシンタックスで表示
+    kolang show_ebnf jalike                    そのシンタックスの BNF（kolang.md の規則を、そのシンタックスの記号で）
+    kolang conv prog.py -f pylike -t jalike    シンタックスの変換（ファイルなしなら標準入力、-o で出力先）
+    kolang conv prog.ko -t jalike              .ko なら -f は不要（1 行目で指定）
     kolang conv prog.py -f pylike          構文チェックだけ（-t を省略）
     kolang run prog.ko                     .ko は 1 行目の ```シンタックス で指定（-f は不要）。
                                            同じ名前の prog.doctest があれば、続けてテストする
     kolang pass@1 humaneval/*.ko           .ko と .doctest を実行して pass@1 を計算する（--total 164 で分母を指定）
     kolang eval SYNTAX [-i FILE]           kolangeval.jsonl の正解（pylike）を SYNTAX に変換し、doctest で動作を確かめる
                                            （--model NAME [--context FILE] [-o OUT.jsonl] でモデルの生成を採点）
-    kolang modelppl [-s SYNTAX...]         シンタックスと LLM の親和度（NLL / PPL）。modelppl.csv を埋める
+    kolang modelppl SYNTAX... [--model M]  シンタックスと LLM の親和度（NLL / PPL）。modelppl.csv に記録
     kolang run prog.py [-f pylike]         実行する（Python 互換。doctest 風の例は答え合わせ）
 """
 
@@ -192,7 +192,7 @@ def build_run_parser() -> argparse.ArgumentParser:
     )
     ap.add_argument("file", nargs="?", help="プログラム（省略すると標準入力）")
     ap.add_argument("-f", "--from", dest="src", metavar="SYNTAX", default=None,
-                    help="シンタックス（既定: .ko ならファイルの 1 行目、それ以外は pylike）。名前、JSON のパス、カスケード（ja:jslike(assign,block)）")
+                    help="シンタックス（既定: .ko ならファイルの 1 行目、それ以外は pylike）。名前、JSON のパス、カスケード（jalike:jslike(assign,block)）")
     return ap
 
 
@@ -304,7 +304,7 @@ def build_eval_parser() -> argparse.ArgumentParser:
                     "doctest で動作を確かめる。pass@1（合格した問題の割合）を出す。",
         epilog="終了コード: 0 すべて合格 / 1 不合格がある / 2 使い方の誤り。",
     )
-    ap.add_argument("syntax", metavar="SYNTAX", help="名前、JSON のパス、カスケード（ja:jslike(assign,block)）")
+    ap.add_argument("syntax", metavar="SYNTAX", help="名前、JSON のパス、カスケード（jalike:jslike(assign,block)）")
     ap.add_argument("-i", "--input", metavar="FILE", help="問題の jsonl（既定: kolang/kolangeval.jsonl）")
     ap.add_argument("-t", "--task", metavar="ID", nargs="+",
                     help="この問題だけ評価する（HumanEval/0 または 0）")
@@ -383,7 +383,7 @@ def build_show_snippet_parser() -> argparse.ArgumentParser:
         prog="kolang show_snippet",
         description="スニペット（カスケードの検査に使う AST。kolang/snippet.py）を、シンタックスで書いて表示する。",
     )
-    ap.add_argument("syntax", metavar="SYNTAX", help="名前、JSON のパス、カスケード（ja:jslike(assign,block)）")
+    ap.add_argument("syntax", metavar="SYNTAX", help="名前、JSON のパス、カスケード（jalike:jslike(assign,block)）")
     ap.add_argument("names", nargs="*", metavar="NAME", help="表示するスニペット（省略すると全部）")
     ap.add_argument("--list", action="store_true", help="スニペットの名前の一覧を表示する")
     return ap
@@ -403,7 +403,7 @@ def build_show_ebnf_parser() -> argparse.ArgumentParser:
         prog="kolang show_ebnf",
         description="シンタックスの BNF を表示する（kolang.md の規則を、そのシンタックスの記号で書いたもの）。",
     )
-    ap.add_argument("syntax", metavar="SYNTAX", help="名前、JSON のパス、カスケード（ja:jslike(assign,block)）")
+    ap.add_argument("syntax", metavar="SYNTAX", help="名前、JSON のパス、カスケード（jalike:jslike(assign,block)）")
     return ap
 
 

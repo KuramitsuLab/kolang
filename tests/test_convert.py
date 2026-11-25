@@ -26,14 +26,14 @@ JA = (
     "関数 add(a, b)とは『\n"
     "    aを返す\n"
     "』\n"
-    "sに0を代入\n"
+    "0をsに代入\n"
     "3回くり返す『\n"
     "    sを増やす\n"
     "』\n"
     "もしsが3と等しいなら『\n"
-    "    xsに\"ok\"を追加\n"
+    "    \"ok\"をxsに追加\n"
     "』そうでなければ『\n"
-    "    sに【1, 2】を代入\n"
+    "    [1, 2]をsに代入\n"
     "    抜ける\n"
     "』\n"
 )
@@ -41,7 +41,7 @@ JA = (
 # どちらの書き方でも通る、いろいろな構文のプログラム（シンタックス名, ソース）。
 SAMPLES = [
     ("pylike", PY),
-    ("ja", JA),
+    ("jalike", JA),
     ("pylike", 'x = [True, False, None, "a\\"b\\\\c\\n", 1.5]\n'
                "y[0][x] = f(1, g(x), [])\n"
                "z.append(h())\n"
@@ -53,7 +53,7 @@ SAMPLES = [
                "def f():\n    n = 2\n    for _ in range(n):\n        if n == 1:\n            return n\n"
                "        else:\n            n -= 1\n    return None\n"),
     ("pylike", "_合計 金額_ = 1\n_カウンタ_ += 1\n"),
-    ("ja", "_合計_に【真,偽,無】を代入\n_カウンタ_を増やす\nxの(0)番目の(y)番目に (1,2)におけるfの値を代入\n"),
+    ("jalike", "[真,偽,無]を_合計_に代入\n_カウンタ_を増やす\n(1,2)におけるfの値をxの(0)番目の(y)番目に代入\n"),
 ]
 
 
@@ -61,40 +61,40 @@ class RoundTrip(unittest.TestCase):
     def test_every_pair_keeps_the_ast(self):
         for src_name, source in SAMPLES:
             tree = parse(source, src_name)
-            for dst_name in ("pylike", "ja"):
+            for dst_name in ("pylike", "jalike"):
                 with self.subTest(src=src_name, dst=dst_name, head=source[:20]):
                     text = convert(source, src_name, dst_name)
                     self.assertEqual(parse(text, dst_name), tree)
 
     def test_there_and_back_again(self):
         for source in (PY, JA):
-            tree = parse(source, "pylike" if source is PY else "ja")
-            there = convert(source, "pylike" if source is PY else "ja",
-                            "ja" if source is PY else "pylike")
-            back = convert(there, "ja" if source is PY else "pylike",
-                           "pylike" if source is PY else "ja")
-            self.assertEqual(parse(back, "pylike" if source is PY else "ja"), tree)
+            tree = parse(source, "pylike" if source is PY else "jalike")
+            there = convert(source, "pylike" if source is PY else "jalike",
+                            "jalike" if source is PY else "pylike")
+            back = convert(there, "jalike" if source is PY else "pylike",
+                           "pylike" if source is PY else "jalike")
+            self.assertEqual(parse(back, "pylike" if source is PY else "jalike"), tree)
 
 
 class Output(unittest.TestCase):
     def test_pylike_to_ja(self):
-        self.assertEqual(convert(PY, "pylike", "ja"), JA)
+        self.assertEqual(convert(PY, "pylike", "jalike"), JA)
 
     def test_ja_to_pylike(self):
-        self.assertEqual(convert(JA, "ja", "pylike"), PY)
+        self.assertEqual(convert(JA, "jalike", "pylike"), PY)
 
     def test_comments_are_converted(self):
-        self.assertEqual(convert("x = 1 # c\n", "pylike", "ja"), "xに1を代入 ※ c\n")
+        self.assertEqual(convert("x = 1 # c\n", "pylike", "jalike"), "1をxに代入 ※ c\n")
 
     def test_names_are_quoted_when_the_target_cannot_write_them(self):
-        self.assertEqual(convert("_合計_に1を代入\n", "ja", "pylike"), "_合計_ = 1\n")
-        self.assertEqual(convert("_if_ = 1\n", "pylike", "ja"), "ifに1を代入\n")
-        self.assertEqual(convert("ifに1を代入\n", "ja", "pylike"), "_if_ = 1\n")
+        self.assertEqual(convert("1を_合計_に代入\n", "jalike", "pylike"), "_合計_ = 1\n")
+        self.assertEqual(convert("_if_ = 1\n", "pylike", "jalike"), "1をifに代入\n")
+        self.assertEqual(convert("1をifに代入\n", "jalike", "pylike"), "_if_ = 1\n")
 
     def test_unparse_directly(self):
         tree = K.Block((K.Assign(K.Var("x"), K.Str('a"b')),))
         self.assertEqual(unparse(tree, "pylike"), 'x = "a\\"b"\n')
-        self.assertEqual(unparse(tree, "ja"), "xに\"a\\\"b\"を代入\n")
+        self.assertEqual(unparse(tree, "jalike"), "\"a\\\"b\"をxに代入\n")
 
 
 class Errors(unittest.TestCase):
@@ -111,7 +111,7 @@ class Errors(unittest.TestCase):
 
     def test_parse_error_passes_through(self):
         with self.assertRaises(ParseError):
-            convert("x = = 1", "pylike", "ja")
+            convert("x = = 1", "pylike", "jalike")
 
 
 class Reserved(unittest.TestCase):
@@ -120,7 +120,7 @@ class Reserved(unittest.TestCase):
             load_syntax("pylike").reserved,
             {"if", "else", "for", "def", "return", "break", "True", "False", "None"})
         # 日本語版の語は名前の形ではない（ひらがな・漢字）ので、予約語にならない
-        self.assertEqual(load_syntax("ja").reserved, frozenset())
+        self.assertEqual(load_syntax("jalike").reserved, frozenset())
 
     def test_extra_reserved_words_in_json(self):
         data = json.loads((SYNTAX_DIR / "pylike.json").read_text(encoding="utf-8"))
@@ -149,7 +149,7 @@ class BraceSyntax(unittest.TestCase):
             with self.subTest(head=source[:20]):
                 text = convert(source, src_name, brace)
                 self.assertEqual(parse(text, brace), parse(source, src_name))
-                self.assertEqual(parse(convert(text, brace, "ja"), "ja"), parse(source, src_name))
+                self.assertEqual(parse(convert(text, brace, "jalike"), "jalike"), parse(source, src_name))
 
     def test_text(self):
         brace = self.brace_syntax()
