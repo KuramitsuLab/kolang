@@ -28,6 +28,10 @@ DEFAULT_MODEL = "Qwen/Qwen2.5-Coder-1.5B-Instruct"
 Solver = Callable[[dict, Syntax], str]
 class Generation(str):
     """モデルの返答（生の出力）に、トークン数を添えたもの。ただの str でも Generator の返り値にできる（数は null）。"""
+class FatalGenerationError(ValueError):
+    """認証の失敗など、何問やっても直らないエラー。不合格にせず、評価を止める。"""
+
+
     input_tokens: Optional[int] = None      # 入力（チャットテンプレートと書き出しを含む）
     output_tokens: Optional[int] = None     # 新しく生成した分
 
@@ -185,8 +189,13 @@ def make_claude_generator(model_name: str, context: str = "", max_tokens: int = 
         user = (problem["prompt"] + "\n\nWrite your answer as a single code block. "
                 "Begin the code block exactly like this, then continue from there:\n" + opening)
         kwargs = {"system": [{"type": "text", "text": context, "cache_control": {"type": "ephemeral"}}]} if context else {}
-        msg = client.messages.create(model=model_id, max_tokens=max_tokens,
-                                     messages=[{"role": "user", "content": user}], **kwargs)
+        try:
+            msg = client.messages.create(model=model_id, max_tokens=max_tokens,
+                                         messages=[{"role": "user", "content": user}], **kwargs)
+        except (anthropic.AuthenticationError, anthropic.PermissionDeniedError) as e:
+            raise FatalGenerationError(
+                "Anthropic API の認証に失敗しました（ANTHROPIC_API_KEY が無効です）。"
+                "正しいキーを export ANTHROPIC_API_KEY=sk-ant-... で設定してから実行してください") from e
         u = msg.usage
         n_in = u.input_tokens + (u.cache_read_input_tokens or 0) + (u.cache_creation_input_tokens or 0)
         return Generation("".join(b.text for b in msg.content if b.type == "text"), n_in, u.output_tokens)
@@ -250,3 +259,5 @@ def evaluate_recorded(syntax: Syntax, problems: Iterable[dict], generate: Genera
 
 def evaluate(syntax: Syntax, problems: Iterable[dict], solver: Solver = reference_solver) -> list:
     return [check(p, syntax, solver) for p in problems]
+    except FatalGenerationError:
+        raise
