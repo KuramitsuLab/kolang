@@ -113,6 +113,17 @@ class TestModelEval(unittest.TestCase):
             self.assertEqual(list(r), ["task_id", "model", "syntax", "prompt", "output",
                                        "input_tokens", "output_tokens", "code", "doctest", "error_message"])
             self.assertEqual((r["model"], r["syntax"], r["prompt"]), ("fake", "jalike", p["prompt"]))
+    def test_print_verbose(self):
+        import contextlib, io
+        from kolang.cli import print_verbose
+        rec = {"task_id": "HumanEval/0", "syntax": "pylike", "model": "m", "prompt": "PROMPT",
+               "output": "OUTPUT", "doctest": {"ok": False, "passed": 1, "total": 2}, "error_message": "ERR"}
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            print_verbose(rec)
+        for word in ("HumanEval/0", "PROMPT", "OUTPUT", "FAIL", "1/2", "ERR"):
+            self.assertIn(word, err.getvalue())
+
             self.assertTrue(r["output"].startswith("説明"))
             self.assertNotIn("```", r["code"])
             self.assertTrue(r["doctest"]["ok"])

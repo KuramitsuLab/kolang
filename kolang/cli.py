@@ -347,6 +347,8 @@ def build_eval_parser() -> argparse.ArgumentParser:
     ap.add_argument("--context", metavar="FILE",
                     help="モデルに渡す言語の説明（--model のとき）。なければ kolang/examples/*.ko を SYNTAX に変換して使う。`none` なら何も足さない（空）。`snippet` / `ebnf`（`snippet,ebnf` も可）なら、それに snippet.SNIPPETS（構文ごとの小さな例）/ BNF（show_ebnf）も足す")
     ap.add_argument("-o", "--output", metavar="FILE", help="jsonl の出力先（--model のとき。既定: results/kolangeval_<syntax>_<model>[_d<N>].jsonl。- なら標準出力）")
+    ap.add_argument("-v", "--verbose", action="store_true",
+                    help="1 問ごとに、prompt・モデルの出力・採点結果を標準エラーへ表示する（--model のとき）")
     return ap
 
 
@@ -423,6 +425,17 @@ def check_command(args: argparse.Namespace) -> int:
     return 0 if ok and n_pass == len(scored) else 1
 
 
+def print_verbose(rec: dict) -> None:
+    """`kolang eval --verbose`: 1 問分の prompt・出力・採点結果を標準エラーへ。"""
+    d = rec["doctest"]
+    bar = "=" * 70
+    print(f"{bar}\n{rec['task_id']}  ({rec['syntax']}, {rec['model']})", file=sys.stderr)
+    print(f"--- prompt ---\n{rec['prompt']}", file=sys.stderr)
+    print(f"--- output ---\n{rec['output']}", file=sys.stderr)
+    print(f"--- result ---\n{'PASS' if d['ok'] else 'FAIL'}  doctest {d['passed']}/{d['total']}"
+          + (f"  {rec['error_message']}" if rec["error_message"] else ""), file=sys.stderr)
+
+
 def eval_model_command(args: argparse.Namespace, syn: Syntax, problems: list) -> int:
     """モデルでコードを生成して採点し、1 問 1 行の jsonl を出す。要約は標準エラーへ。"""
     from .kolangeval import build_context, evaluate_recorded, default_output_name, is_claude, make_claude_generator, make_hf_generator
@@ -442,6 +455,8 @@ def eval_model_command(args: argparse.Namespace, syn: Syntax, problems: list) ->
             out.flush()
             scored += 1
             n_pass += rec["doctest"]["ok"]
+            if getattr(args, "verbose", False):
+                print_verbose(rec)
     finally:
         if out is not sys.stdout:
             out.close()
