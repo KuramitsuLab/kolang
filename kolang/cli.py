@@ -379,8 +379,8 @@ def build_eval_parser() -> argparse.ArgumentParser:
     ap.add_argument("-q", "--quiet", action="store_true", help="不合格の問題だけ表示する")
     ap.add_argument("--model", metavar="NAME",
                     help="このモデル（Hugging Face。claude- で始まれば Anthropic API。要 ANTHROPIC_API_KEY）に prompt を渡してコードを生成し、採点する。結果は jsonl で出す")
-    ap.add_argument("--context", metavar="FILE",
-                    help="モデルに渡す言語の説明（--model のとき）。コンマ区切りで、examples（kolang/examples/*.ko を SYNTAX に変換）のあとに順に足す: `snippet`（snippet.SNIPPETS）/ `ebnf`（show_ebnf の BNF）/ NAME（kolang/spec/NAME.md の ```pylike ブロックを SYNTAX に変換）/ FILE（存在するファイルはそのまま。単独なら examples なし）。`none` は examples を省く（単独なら空）。例: --context syntax,ebnf")
+    ap.add_argument("--context", metavar="FILE", default="guide",
+                    help="（既定: guide）モデルに渡す言語の説明（--model のとき）。コンマ区切りで、examples（kolang/examples/*.ko を SYNTAX に変換）のあとに順に足す: `snippet`（snippet.SNIPPETS）/ `ebnf`（show_ebnf の BNF）/ NAME（kolang/spec/NAME.md の ```pylike ブロックを SYNTAX に変換）/ FILE（存在するファイルはそのまま。単独なら examples なし）。`none` は examples を省く（単独なら空）。例: --context syntax,ebnf")
     ap.add_argument("-o", "--output", metavar="FILE", help="jsonl の出力先（--model のとき。既定: results/kolangeval_<syntax>_<model>[_d<N>].jsonl。- なら標準出力）")
     ap.add_argument("-v", "--verbose", action="store_true",
                     help="1 問ごとに、prompt・モデルの出力・採点結果を標準エラーへ表示する（--model のとき）")
