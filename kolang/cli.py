@@ -378,7 +378,7 @@ def build_eval_parser() -> argparse.ArgumentParser:
                     help="この difficulty の問題だけ評価する（1〜5）")
     ap.add_argument("-q", "--quiet", action="store_true", help="不合格の問題だけ表示する")
     ap.add_argument("--model", metavar="NAME",
-                    help="このモデル（Hugging Face。claude- で始まれば Anthropic API。要 ANTHROPIC_API_KEY）に prompt を渡してコードを生成し、採点する。結果は jsonl で出す")
+                    help="（必須。例: claude-haiku-5.5 / Qwen/Qwen2.5-Coder-1.5B-Instruct）このモデル（Hugging Face。claude- で始まれば Anthropic API。要 ANTHROPIC_API_KEY）に prompt を渡してコードを生成し、採点する。結果は jsonl で出す")
     ap.add_argument("--context", metavar="FILE", default="guide",
                     help="（既定: guide）モデルに渡す言語の説明（--model のとき）。コンマ区切りで順に並べる（examples は入れない）: NAME（kolang/spec/NAME.md の ```pylike ブロックを SYNTAX に変換。guide / 3shots など）/ `snippet`（snippet.SNIPPETS）/ `ebnf`（show_ebnf の BNF）/ FILE（存在するファイルはそのまま）。`none` は空（システムメッセージなし）。例: --context 3shots,ebnf")
     ap.add_argument("-o", "--output", metavar="FILE", help="jsonl の出力先（--model のとき。既定: results/<context>/kolangeval_<syntax>_<model>[_d<N>].jsonl。- なら標準出力）")
@@ -407,7 +407,8 @@ def select_problems(args: argparse.Namespace) -> list:
 
 def eval_command(args: argparse.Namespace) -> int:
     if not args.model:
-        raise CliError("--model が要ります（正解コードの変換と採点は `kolang check SYNTAX`）")
+        raise CliError("--model が要ります（例: --model claude-haiku-5.5 / --model Qwen/Qwen2.5-Coder-1.5B-Instruct。"
+                       "正解コードの変換と採点は `kolang check SYNTAX`）")
     syn = load(args.syntax)
     return eval_model_command(args, syn, select_problems(args))
 

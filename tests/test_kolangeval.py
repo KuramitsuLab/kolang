@@ -37,10 +37,13 @@ class KolangEvalTest(unittest.TestCase):
         self.assertIn("OK", ok.getvalue())
 
     def test_eval_needs_a_model(self):
+        # 既定のモデルは持たない（忘れて API を呼ばないため）。例を添えたエラーで止まる
         import io
         from contextlib import redirect_stderr
-        with redirect_stderr(io.StringIO()):
+        err = io.StringIO()
+        with redirect_stderr(err):
             self.assertEqual(main(["eval", "jalike"]), 1)
+        self.assertIn("claude-haiku-5.5", err.getvalue())
 
 
 if __name__ == "__main__":
