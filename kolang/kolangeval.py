@@ -24,7 +24,6 @@ from .syntax import Syntax
 from .unparser import convert, defined_names
 
 DEFAULT_FILE = Path(__file__).resolve().parent / "kolangeval.jsonl"
-EXAMPLES_DIR = Path(__file__).resolve().parent / "examples"
 SPEC_DIR = Path(__file__).resolve().parent / "spec"
 RESULTS_DIR = "results"
 DEFAULT_MODEL = "Qwen/Qwen2.5-Coder-1.5B-Instruct"
@@ -91,26 +90,16 @@ def convert_spec(text: str, syntax: Syntax) -> str:
 def build_context(syntax: Syntax, path: Optional[str] = None) -> str:
     """モデルに渡す言語の説明（コンテキスト）。
 
-    path はコンマ区切りの項目の並びで、最初に examples（`kolang/examples/*.ko` を syntax に変換）を置き、
-    項目を指定の順に足す。項目は次のどれか:
-    - `none`: 何も足さない（`none` だけなら空のコンテキスト。システムメッセージなし）。
+    path はコンマ区切りの項目の並びで、項目を指定の順に足す（examples は入れない。指定がなければ空）。項目は次のどれか:
+    - `none`: 何も足さない（古い指定との互換。`none` だけなら空のコンテキスト = システムメッセージなし）。
     - `snippet`: `snippet.SNIPPETS`（そのシンタックスで書けないものは省く）。
     - `ebnf`: `show_ebnf` の BNF。
-    - 存在するファイルのパス: 中身をそのまま使う（単独なら examples も足さず、その中身だけ）。
+    - 存在するファイルのパス: 中身をそのまま使う。
     - NAME: `kolang/spec/NAME.md` の ```pylike などのブロックを syntax に変換したもの。
     """
     items = [x.strip() for x in path.split(",") if x.strip()] if path else []
-    if items == ["none"]:
-        return ""
-    if len(items) == 1 and Path(items[0]).is_file():
-        return Path(items[0]).read_text(encoding="utf-8")
-    from .kofile import join_ko, split_ko
+    from .kofile import join_ko
     parts = []
-    if "none" not in items:
-        parts.append("以下は kolang のコードの例です。同じ書き方でコードを書いてください。")
-        for f in sorted(EXAMPLES_DIR.glob("*.ko")):
-            spec, code = split_ko(f.read_text(encoding="utf-8"))
-            parts.append(f"# {f.name}\n" + join_ko(syntax.name, convert(code, spec, syntax)).rstrip())
     for item in items:
         if item == "none":
             continue
@@ -194,14 +183,17 @@ def make_hf_generator(model_name: str = DEFAULT_MODEL, context: str = "", device
     return generate
 
 
-def default_output_name(syntax: Syntax, model: str, difficulty: Optional[Iterable[int]] = None) -> str:
-    """jsonl の既定の出力先 results/kolangeval_<syntax>_<model>[_d<N>].jsonl。
+def default_output_name(syntax: Syntax, model: str, difficulty: Optional[Iterable[int]] = None,
+                        context: Optional[str] = None) -> str:
+    """jsonl の既定の出力先 results/<context>/kolangeval_<syntax>_<model>[_d<N>].jsonl。
 
-    ファイル名に使えない文字は _ にする。difficulty（-d）の指定があれば _d1、複数なら _d1_3 のように付ける。"""
+    ファイル名に使えない文字は _ にする。difficulty（-d）の指定があれば _d1、複数なら _d1_3 のように付ける。
+    context（--context の指定。3shots,ebnf なら 3shots_ebnf）はフォルダ名にする。None なら results 直下。"""
     import re as _re
     safe = lambda t: _re.sub(r"[^A-Za-z0-9._-]+", "_", t).strip("_")
     d = "".join(f"_d{n}" if i == 0 else f"_{n}" for i, n in enumerate(sorted(set(difficulty)))) if difficulty else ""
-    return f"{RESULTS_DIR}/kolangeval_{safe(syntax.name)}_{safe(model)}{d}.jsonl"
+    folder = f"{RESULTS_DIR}/{safe(context) or 'none'}" if context is not None else RESULTS_DIR
+    return f"{folder}/kolangeval_{safe(syntax.name)}_{safe(model)}{d}.jsonl"
 
 
 def is_claude(model_name: str) -> bool:
@@ -241,9 +233,9 @@ def make_claude_generator(model_name: str, context: str = "", max_tokens: int = 
 
 
 def to_record(problem: dict, result: Result, syntax: Syntax, model: Optional[str],
-              output: str, code: str) -> dict:
-    """jsonl の 1 行。output は生の出力（input_tokens / output_tokens はモデルが数えたとき）、code は取り出したコード、error_message は失敗の理由（なければ null）。"""
-    return {"task_id": result.task_id, "model": model, "syntax": syntax.name,
+              output: str, code: str, context: Optional[str] = None) -> dict:
+    """jsonl の 1 行。context は --context の指定（モデルに渡した言語の説明。なければ null）。output は生の出力（input_tokens / output_tokens はモデルが数えたとき）、code は取り出したコード、error_message は失敗の理由（なければ null）。"""
+    return {"task_id": result.task_id, "model": model, "syntax": syntax.name, "context": context,
             "prompt": problem["prompt"], "output": str(output),
             "input_tokens": getattr(output, "input_tokens", None),
             "output_tokens": getattr(output, "output_tokens", None), "code": code,
@@ -305,7 +297,7 @@ def check(problem: dict, syntax: Syntax, solver: Solver = reference_solver) -> R
 
 
 def evaluate_recorded(syntax: Syntax, problems: Iterable[dict], generate: Generator,
-                      model: Optional[str] = None) -> Iterable[dict]:
+                      model: Optional[str] = None, context: Optional[str] = None) -> Iterable[dict]:
     """1 問ずつ、生成 → コードの取り出し → 採点して、jsonl の行（dict）を返す。"""
     for p in problems:
         outputs = []
@@ -315,7 +307,7 @@ def evaluate_recorded(syntax: Syntax, problems: Iterable[dict], generate: Genera
             return extract_code(_outputs[-1])
         result = check(p, syntax, solver)
         output = outputs[0] if outputs else ""
-        yield to_record(p, result, syntax, model, output, extract_code(output) if outputs else "")
+        yield to_record(p, result, syntax, model, output, extract_code(output) if outputs else "", context)
 
 
 def evaluate(syntax: Syntax, problems: Iterable[dict], solver: Solver = reference_solver) -> list:

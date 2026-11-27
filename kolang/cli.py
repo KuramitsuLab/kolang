@@ -380,8 +380,8 @@ def build_eval_parser() -> argparse.ArgumentParser:
     ap.add_argument("--model", metavar="NAME",
                     help="このモデル（Hugging Face。claude- で始まれば Anthropic API。要 ANTHROPIC_API_KEY）に prompt を渡してコードを生成し、採点する。結果は jsonl で出す")
     ap.add_argument("--context", metavar="FILE", default="guide",
-                    help="（既定: guide）モデルに渡す言語の説明（--model のとき）。コンマ区切りで、examples（kolang/examples/*.ko を SYNTAX に変換）のあとに順に足す: `snippet`（snippet.SNIPPETS）/ `ebnf`（show_ebnf の BNF）/ NAME（kolang/spec/NAME.md の ```pylike ブロックを SYNTAX に変換）/ FILE（存在するファイルはそのまま。単独なら examples なし）。`none` は examples を省く（単独なら空）。例: --context syntax,ebnf")
-    ap.add_argument("-o", "--output", metavar="FILE", help="jsonl の出力先（--model のとき。既定: results/kolangeval_<syntax>_<model>[_d<N>].jsonl。- なら標準出力）")
+                    help="（既定: guide）モデルに渡す言語の説明（--model のとき）。コンマ区切りで順に並べる（examples は入れない）: NAME（kolang/spec/NAME.md の ```pylike ブロックを SYNTAX に変換。guide / 3shots など）/ `snippet`（snippet.SNIPPETS）/ `ebnf`（show_ebnf の BNF）/ FILE（存在するファイルはそのまま）。`none` は空（システムメッセージなし）。例: --context 3shots,ebnf")
+    ap.add_argument("-o", "--output", metavar="FILE", help="jsonl の出力先（--model のとき。既定: results/<context>/kolangeval_<syntax>_<model>[_d<N>].jsonl。- なら標準出力）")
     ap.add_argument("-v", "--verbose", action="store_true",
                     help="1 問ごとに、prompt・モデルの出力・採点結果を標準エラーへ表示する（--model のとき）")
     ap.add_argument("--resume", action="store_true",
@@ -497,7 +497,7 @@ def eval_model_command(args: argparse.Namespace, syn: Syntax, problems: list) ->
     except OSError as e:
         raise CliError(f"--context を読めません: {e}")
     generate = (make_claude_generator if is_claude(args.model) else make_hf_generator)(args.model, context)
-    path = args.output or default_output_name(syn, args.model, args.difficulty)
+    path = args.output or default_output_name(syn, args.model, args.difficulty, args.context)
     if path != "-":
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     n_pass = scored = 0
@@ -517,7 +517,7 @@ def eval_model_command(args: argparse.Namespace, syn: Syntax, problems: list) ->
             if f.read(1) != b"\n":
                 out.write("\n")
     try:
-        for rec in evaluate_recorded(syn, problems, generate, args.model):
+        for rec in evaluate_recorded(syn, problems, generate, args.model, args.context):
             out.write(json.dumps(rec, ensure_ascii=False) + "\n")
             out.flush()
             scored += 1

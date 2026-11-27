@@ -50,22 +50,19 @@ if __name__ == "__main__":
 class TestModelEval(unittest.TestCase):
     """--model の部品。モデルは偽の Solver に置き換える。"""
 
-    def test_context_from_examples(self):
+    def test_context_default_is_empty(self):
         from kolang.kolangeval import build_context
         from kolang.syntax import load_syntax
-        for name in ("pylike", "jalike", "lisplike", "jslike"):
-            ctx = build_context(load_syntax(name))
-            self.assertIn("```" + name, ctx)
-            self.assertIn("fizzbuzz", ctx)
+        # examples は入れない。指定がなければ空
+        for name in ("pylike", "jalike"):
+            self.assertEqual(build_context(load_syntax(name)), "")
+            self.assertNotIn("fizzbuzz", build_context(load_syntax(name), "snippet,ebnf"))
 
     def test_context_snippet(self):
         from kolang.kolangeval import build_context
         from kolang.syntax import load_syntax
-        base = build_context(load_syntax("jalike"))
         ctx = build_context(load_syntax("jalike"), "snippet")
-        self.assertTrue(ctx.startswith(base))
         self.assertIn("# snippet: assign", ctx)
-        self.assertGreater(len(ctx), len(base))
 
     def test_context_none(self):
         from kolang.kolangeval import build_context
@@ -77,9 +74,7 @@ class TestModelEval(unittest.TestCase):
         from kolang.kolangeval import build_context
         from kolang.syntax import load_syntax
         syn = load_syntax("jalike")
-        base = build_context(syn)
         ctx = build_context(syn, "ebnf")
-        self.assertTrue(ctx.startswith(base))
         self.assertIn(show_ebnf(syn).rstrip(), ctx)
         self.assertNotIn("# snippet:", ctx)
         both = build_context(syn, "snippet,ebnf")
@@ -91,19 +86,31 @@ class TestModelEval(unittest.TestCase):
         from kolang.kolangeval import build_context
         from kolang.syntax import load_syntax
         syn = load_syntax("jalike")
-        base = build_context(syn)
         ctx = build_context(syn, "syntax,ebnf")
-        self.assertTrue(ctx.startswith(base))
         self.assertIn("# kolang の書き方", ctx)
         self.assertIn("```jalike", ctx.split("# kolang の書き方")[1])
         self.assertNotIn("```pylike", ctx)
         self.assertLess(ctx.index("# kolang の書き方"), ctx.index(show_ebnf(syn).rstrip()))
         self.assertNotIn("# kolang の書き方", build_context(syn, "ebnf"))
-        none = build_context(syn, "none,syntax")
-        self.assertNotIn("fizzbuzz", none)
-        self.assertIn("# kolang の書き方", none)
+        self.assertNotIn("fizzbuzz", build_context(syn, "none,syntax"))
         with self.assertRaises(OSError):
             build_context(syn, "nosuchspec")
+
+    def test_context_3shots(self):
+        from kolang.kolangeval import build_context
+        from kolang.syntax import load_syntax
+        ctx = build_context(load_syntax("jalike"), "3shots")
+        for name in ("gcd", "count_vowels", "reverse"):
+            self.assertIn(name, ctx)
+        self.assertNotIn("```pylike", ctx)
+
+    def test_context_5shots(self):
+        from kolang.kolangeval import build_context
+        from kolang.syntax import load_syntax
+        ctx = build_context(load_syntax("jalike"), "5shots")
+        for name in ("gcd", "count_vowels", "reverse", "fizzbuzz", "circle_area"):
+            self.assertIn(name, ctx)
+        self.assertNotIn("```pylike", ctx)
 
     def test_context_file(self):
         import tempfile
@@ -140,7 +147,7 @@ class TestModelEval(unittest.TestCase):
         self.assertEqual([r["task_id"] for r in recs], [p["task_id"] for p in ps])
         for r, p in zip(recs, ps):
             json.dumps(r, ensure_ascii=False)
-            self.assertEqual(list(r), ["task_id", "model", "syntax", "prompt", "output",
+            self.assertEqual(list(r), ["task_id", "model", "syntax", "context", "prompt", "output",
                                        "input_tokens", "output_tokens", "code", "doctest", "error_message"])
             self.assertEqual((r["model"], r["syntax"], r["prompt"]), ("fake", "jalike", p["prompt"]))
             self.assertTrue(r["output"].startswith("説明"))
@@ -149,6 +156,8 @@ class TestModelEval(unittest.TestCase):
             self.assertEqual(r["doctest"]["passed"], r["doctest"]["total"])
             self.assertIsNone(r["error_message"])
         self.assertEqual((recs[0]["input_tokens"], recs[0]["output_tokens"]), (None, None))
+        self.assertIsNone(recs[0]["context"])
+        self.assertEqual(list(evaluate_recorded(syn, ps[:1], fence, "fake", "3shots,ebnf"))[0]["context"], "3shots,ebnf")
         counted = list(evaluate_recorded(syn, ps[:1], lambda p, s: Generation(fence(p, s), 10, 20), "fake"))[0]
         self.assertEqual((counted["input_tokens"], counted["output_tokens"]), (10, 20))
         self.assertTrue(counted["doctest"]["ok"])
@@ -175,6 +184,13 @@ class TestModelEval(unittest.TestCase):
                          "results/kolangeval_jalike_Qwen_Qwen2.5-Coder-1.5B-Instruct.jsonl")
         self.assertEqual(default_output_name(load_syntax("jalike:jslike(assign)"), "claude-haiku-5.5"),
                          "results/kolangeval_jalike_jslike_assign_claude-haiku-5.5.jsonl")
+
+    def test_default_output_name_context(self):
+        from kolang.kolangeval import default_output_name
+        from kolang.syntax import load_syntax
+        jalike = load_syntax("jalike")
+        self.assertEqual(default_output_name(jalike, "m", None, "guide"), "results/guide/kolangeval_jalike_m.jsonl")
+        self.assertEqual(default_output_name(jalike, "m", [1], "3shots,ebnf"), "results/3shots_ebnf/kolangeval_jalike_m_d1.jsonl")
 
     def test_default_output_name_difficulty(self):
         from kolang.kolangeval import default_output_name
