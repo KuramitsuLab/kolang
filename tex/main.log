@@ -1,4 +1,4 @@
-This is e-pTeX, Version 3.141592653-p4.1.0-230214-2.6 (utf8.euc) (TeX Live 2023) (preloaded format=platex 2023.4.2)  24 NOV 2026 23:55
+This is e-pTeX, Version 3.141592653-p4.1.0-230214-2.6 (utf8.euc) (TeX Live 2023) (preloaded format=platex 2023.4.2)  25 NOV 2026 16:06
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -194,37 +194,38 @@ LaTeX Font Info:    Font shape `JT1/mc/bx/n' in size <9.61035> not available
 LaTeX Font Info:    Font shape `JY1/mc/bx/n' in size <9.61035> not available
 (Font)              Font shape `JY1/gt/m/n' tried instead on input line 103.
  [2] [3] [4]
-Overfull \hbox (39.52031pt too wide) in paragraph at lines 294--300
+Overfull \hbox (39.52031pt too wide) in paragraph at lines 297--303
 \JY1/mc/m/n/9.61035 （[]\OT1/cmtt/m/n/9.61035 ja:jslike(block):pylike(funcapp,assign,stdlib)\JY1/mc/m/n/9.61035 ） 、
  []
 
 [5] [6]
-Underfull \hbox (badness 6236) in paragraph at lines 437--441
+Underfull \hbox (badness 6236) in paragraph at lines 441--445
 [][]\OT1/cmtt/m/n/9.61035 kolang \JY1/mc/m/n/9.61035 コマンドは 、 実行 （\OT1/cmtt/m/n/9.61035 run\JY1/mc/m/n/9.61035 ） 、 変換
  []
 
 [7]
-Underfull \hbox (badness 4193) in paragraph at lines 523--533
+Underfull \hbox (badness 4193) in paragraph at lines 527--537
 \OT1/cmtt/m/n/9.61035 stdlib_tour\JY1/mc/m/n/9.61035 、 \OT1/cmtt/m/n/9.61035 fizzbuzz\JY1/mc/m/n/9.61035 、 \OT1/cmtt/m/n/9.61035 list_ops\JY1/mc/m/n/9.61035 、 合計[] \OT1/cmr/m/n/9.61035 288
  []
 
 
-Overfull \hbox (26.11186pt too wide) in paragraph at lines 523--533
+Overfull \hbox (26.11186pt too wide) in paragraph at lines 527--537
 \OT1/cmtt/m/n/9.61035 ja:jslike(block):pylike(funcapp,assign,stdlib)
  []
 
-LaTeX Font Info:    Calculating math sizes for size <8.8711> on input line 543.
+[8]
+LaTeX Font Info:    Calculating math sizes for size <8.8711> on input line 547.
 
-Overfull \hbox (26.11186pt too wide) in paragraph at lines 556--563
+Overfull \hbox (26.11186pt too wide) in paragraph at lines 560--567
 \OT1/cmtt/m/n/9.61035 ja:jslike(block):pylike(funcapp,assign,stdlib)
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 556--563
+Underfull \hbox (badness 10000) in paragraph at lines 560--567
 \JY1/mc/m/n/9.61035 が[] \OT1/cmr/m/n/9.61035 148 \JY1/mc/m/n/9.61035 問 （\OT1/cmr/m/n/9.61035 90%\JY1/mc/m/n/9.61035 ） であ った 。 合成した[]
  []
 
-[8] [9] (./main.bbl
+[9] (./main.bbl
 LaTeX Font Info:    Kanji font shape `JY1/gt/m/it' undefined
 (Font)              No change on input line 4.
 LaTeX Font Info:    Kanji font shape `JY1/gt/m/it' undefined
@@ -240,6 +241,7 @@ Underfull \hbox (badness 4024) in paragraph at lines 13--14
 
 LaTeX Font Info:    Kanji font shape `JY1/gt/m/it' undefined
 (Font)              No change on input line 16.
+[10]
 LaTeX Font Info:    Kanji font shape `JY1/gt/m/it' undefined
 (Font)              No change on input line 22.
 
@@ -249,7 +251,6 @@ Underfull \hbox (badness 10000) in paragraph at lines 25--26
 
 LaTeX Font Info:    Kanji font shape `JY1/gt/m/it' undefined
 (Font)              No change on input line 31.
-[10]
 LaTeX Font Info:    Kanji font shape `JY1/gt/m/it' undefined
 (Font)              No change on input line 37.
 
@@ -262,40 +263,40 @@ LaTeX Font Info:    Kanji font shape `JY1/gt/m/it' undefined
 LaTeX Font Info:    Kanji font shape `JY1/gt/m/it' undefined
 (Font)              No change on input line 58.
 LaTeX Font Info:    Kanji font shape `JY1/gt/m/it' undefined
-(Font)              No change on input line 64.
+(Font)              No change on input line 61.
 LaTeX Font Info:    Kanji font shape `JY1/gt/m/it' undefined
 (Font)              No change on input line 67.
 LaTeX Font Info:    Kanji font shape `JY1/gt/m/it' undefined
 (Font)              No change on input line 70.
 LaTeX Font Info:    Kanji font shape `JY1/gt/m/it' undefined
-(Font)              No change on input line 76.
-) [11]
+(Font)              No change on input line 73.
+LaTeX Font Info:    Kanji font shape `JY1/gt/m/it' undefined
+(Font)              No change on input line 79.
+[11])
 LaTeX Font Info:    Font shape `JT1/mc/m/it' in size <9.61035> not available
-(Font)              Font shape `JT1/mc/m/n' tried instead on input line 650.
+(Font)              Font shape `JT1/mc/m/n' tried instead on input line 654.
 LaTeX Font Info:    Font shape `JY1/mc/m/it' in size <9.61035> not available
-(Font)              Font shape `JY1/mc/m/n' tried instead on input line 650.
+(Font)              Font shape `JY1/mc/m/n' tried instead on input line 654.
 LaTeX Font Info:    Font shape `JT1/mc/m/it' in size <8.8711> not available
-(Font)              Font shape `JT1/mc/m/n' tried instead on input line 662.
+(Font)              Font shape `JT1/mc/m/n' tried instead on input line 666.
 LaTeX Font Info:    Font shape `JY1/mc/m/it' in size <8.8711> not available
-(Font)              Font shape `JY1/mc/m/n' tried instead on input line 662.
+(Font)              Font shape `JY1/mc/m/n' tried instead on input line 666.
 
-Underfull \hbox (badness 10000) in paragraph at lines 667--668
+Underfull \hbox (badness 10000) in paragraph at lines 671--672
 []$\OML/cmm/m/it/8.8711 X[]$ \OT1/cmr/m/it/8.8711 ex-pres-sion $\OML/cmm/m/it/8.8711 X[]$ \OT1/cmr/m/it/8.8711 ex-pres-sion
  []
 
-[12
-
-] [13] [14
+[12] [13] [14
 
 
 ] (./main.aux) ) 
 Here is how much of TeX's memory you used:
- 2058 strings out of 476693
- 33478 string characters out of 5805374
+ 2059 strings out of 476693
+ 33496 string characters out of 5805374
  1866209 words of memory out of 5000000
- 22517 multiletter control sequences out of 15000+600000
+ 22518 multiletter control sequences out of 15000+600000
  538284 words of font info for 148 fonts, out of 8000000 for 9000
  929 hyphenation exceptions out of 8191
  63i,14n,68p,567b,506s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on main.dvi (14 pages, 84036 bytes).
+Output written on main.dvi (14 pages, 85860 bytes).

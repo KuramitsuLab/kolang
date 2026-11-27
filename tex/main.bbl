@@ -54,6 +54,9 @@ Kocetkov, D., Li, R., Allal, L.~B., Li, J., Mou, C., Ferrandis, C.~M., Jernite, 
 \bibitem{Kumar2026PyLang}
 Kumar, V.~B., Makhija, D., Arivazhagan, M.~G. and Gangadharaiah, R.: Syntax Without Semantics: Teaching Large Language Models to Code in an Unseen Language, arXiv:2605.15607 (2026).
 
+\bibitem{Kuramitsu2016Nez}
+Kuramitsu, K.: Nez: Practical Open Grammar Language, {\em Proceedings of the 2016 ACM International Symposium on New Ideas, New Paradigms, and Reflections on Programming and Software (Onward! 2016)}, pp.\ 29--42 (online), \doi{10.1145/2986012.2986019} (2016).
+
 \bibitem{Moribe2026Untrained}
 Moribe, N., Nishigata, Y. and Kuramitsu, K.: Why can {LLM}s generate code in an untrained programming language?, {\em 17th Eiwa-JWU-Ochanomizu Joint Symposium}, Seoul, Korea (2026).
 

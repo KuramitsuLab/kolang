@@ -1,0 +1,298 @@
+% 4ページ版 (main.tex の圧縮版)
+\documentclass{ipsjprosym}
+
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{latexsym}
+\usepackage{booktabs,multirow}
+
+\begin{document}
+
+\title{LLM時代のプログラミング言語設計における\\構文とは？}
+
+\affiliate{1}{日本女子大学理学部\\
+Japan Women’s University, 2-8-1 Mejirodai,
+Bunkyo-ku, Tokyo 112–8681}
+
+\author{長井 夢歩}{}{1}[m2316075ny@ug.jwu.ac.jp]
+\author{森部 七海}{}{1}
+\author{西潟 優羽}{}{1}
+\author{倉光 君郎}{}{1}
+
+\begin{abstract}
+LLMが獲得したプログラミング能力は、新しい構文にどこまで転移するのか。
+この問いを調べるため、構文を自由に変えられる言語処理系kolangを開発した。
+kolangは、文法を抽象的に定義し、字句の部分をすべてパラメータ化して、JSONの正規表現で置き換えられるようにした。
+これにより、Python風、日本語風、Lisp風、JavaScript風などを、同じ構文木として扱える。
+意味論はPythonを既定とし、差し替えられる。シンタックスは要素ごとに重ねて合成できる。
+本稿では、構文を可変にする設計と、パーサ、出力器、評価器、衝突検査からなる実装を報告する。
+\end{abstract}
+
+\begin{jkeyword}
+LLM，プログラミング言語，構文，コード生成，文脈内学習
+\end{jkeyword}
+
+\maketitle
+
+\section{はじめに}
+
+LLMはプログラミング能力をどのように獲得するのか。
+著者らの研究グループは、この問いを一貫して追究してきた。
+その結果、プログラミング能力の獲得には、少なくとも数GBオーダーの大量のコードが必要であり\cite{Souma2025Dataset}、学習するコードは多いほどよいことがわかっている\cite{Kaplan2020Scaling}。
+
+この知見は、LLM時代の言語設計に懸念をもたらす。
+生成AIエージェントの普及により、プログラミングはLLMに大きく依存するようになるからである。
+新しい言語は、もともと利用者を獲得して普及させることが難しい。
+さらに、学習できるコードが少ないため、LLMの支援も受けられない。
+その結果、利用者が増えず、コードも増えないという悪循環に陥る。
+つまり、人類は新しいプログラミング言語を作れなくなるのではないか、という懸念である。
+
+一方、中野ら\cite{Kuramitsu2026Nanako,Nakano2026ProSym}は、LLMが未学習の教育言語を、文脈内学習で書けるようになることを報告した。
+これは、LLMがすでに持っている能力を、新しい言語へ転移させているためと考えられる。
+そこで本研究では、新しい構文への転移に、構文設計のどの要素が影響するかを調べる。
+そのためには、意味論を固定したまま、構文だけを変えられる処理系が必要である。
+従来の教育言語Yuiは、日本語とC言語が混ざった構文と、独自の意味論を持つため、構文の影響だけを切り出せなかった。
+
+そこで、構文を変えられる言語処理系kolangを開発した。
+kolangは、文法を抽象的に定義し、字句の部分をすべてパラメータ化して、JSONの正規表現で置き換えられるようにした。
+複数のシンタックスが、同じ構文木（AST）になる。
+ベースはPython風で、意味論の既定もPythonである。
+本稿の貢献は、(1)構文可変な言語の設計、(2)シンタックスの合成による構文の連続的な変更、(3)パーサ、出力器、評価器、衝突検査の実装、の3つである。
+
+\section{どの構文を可変とするか}
+\label{sec:requirements}
+
+出発点は、教育言語Yui~\cite{Kuramitsu2026Nanako}である。
+Yuiには、構文の影響を調べるうえで3つの課題がある。
+\begin{itemize}
+  \item \textbf{構文の由来が混ざっている:}
+    \verb|もし b が 0 ならば|は日本語だが、\verb|{ }|や\verb|f(x, y)|はC言語由来である。
+    学習の成果が、新しい構文の獲得なのか、既知の構文の組み合わせなのか、区別できない。
+  \item \textbf{意味論が独自である:}
+    中置演算子や\verb|while|がなく、Pythonのコードをそのまま写せない。
+  \item \textbf{構文を要素ごとに動かせない:}
+    記号、語順、識別子の字種などを、ひとつずつ変えて比べる仕組みがない。
+\end{itemize}
+
+そこで、次の要求を立てた。
+\begin{itemize}
+  \item \textbf{単一構文:} ひとつの意味に、ひとつの書き方だけを与える。
+  \item \textbf{連続的な変更:} 日本語ベースの構文からプログラミング言語ベースの構文まで、連続的に動かせる。
+  \item \textbf{語彙と語順:} 自然言語や疑似キーワードに差し替えられ、語順（SVOとSOV）も変えられる。
+  \item \textbf{識別子:} 識別子は意味を持たないものとして英数字を基本とし、他の字種もあいまいさなく使える。
+  \item \textbf{関数適用の記法:} \verb|f(x, y)|、\verb|(f x y)|、日本語の述語後置などを切り替えられる。
+  \item \textbf{意味論の固定:} 構文を比べる間は意味論を固定し、既定はLLMが獲得済みのPythonとする。意味論の差し替えも可能にする。
+  \item \textbf{変換と検証:} どの構文でも同じASTになり、機械的に変換でき、組み合わせの衝突を検出できる。
+\end{itemize}
+
+\section{kolangの設計}
+\label{sec:design}
+
+\textbf{文法の抽象化と字句のパラメータ化:}
+kolangの文法は、代入、\verb|if|/\verb|else|、くり返し、関数定義、\verb|return|などの文と、変数、文字列、数、リスト、関数呼び出し、添字などの式からなる。
+この文法は、字句を含まない抽象的な規則として定義する。
+たとえば\verb|if|文は、\verb|if_begin|\ \verb|<condition>|\ \verb|if_then|\ \verb|<block>|\ \verb|<else>?|\ \verb|if_end|という規則で定義する（文法全体は付録~\ref{app:syntax}）。
+規則の中の字句は、すべて小文字のトークン名で表すパラメータで、各トークンの正規表現は、シンタックス定義（JSON）が与える。
+つまり、正規表現を置き換えるだけで、構文を変えられる。
+どのシンタックスで書いても同じASTになるので、プログラムを別のシンタックスへ機械的に変換できる。
+
+\textbf{語順の可変:}
+関数呼び出しは、\verb|f(x, y)|のように関数が先に来る\verb|func_first|と、日本語のように述語が最後に来る\verb|args_first|を選べる。
+日本語版は後者で、\verb|(x, y)におけるfの値|と書く。
+どちらも同じ\verb|Call|ノードになる。
+添字も、\verb|x[i]|、\verb|(get x i)|、\verb|xの(i)番目|のように変えられる。
+
+\textbf{意味論:}
+構文の影響だけを測るため、意味論はPythonに固定した。
+値も演算もエラーもPythonに任せるので、LLMが獲得済みの能力を転移の対象にでき、既存のベンチマークも、構文の変換だけで流用できる（MultiPL-E~\cite{Cassano2023MultiPLE}と同様）。
+評価器\verb|pyeval|はVisitorで、変数の参照、比較、呼び出しなどの意味の核だけを別のメソッドにしてあり、継承して上書きすれば意味論を差し替えて、その影響も調べられる。
+現状の実装はPythonのみである。
+
+\textbf{シンタックスの合成:}
+構文の要素を個別に入れ替えるため、シンタックスは要素ごとに重ねて合成できる。
+たとえば\verb|ja:jslike(assign,block,funcapp)|は、日本語版を土台に、代入、ブロック、関数呼び出しだけをJavaScript風にする。
+括弧の中の名前は、トークン名の接頭辞（\verb|assign|、\verb|block|、\verb|funcapp|、\verb|stdlib|など）でまとめたグループである。
+合成はJSONの辞書の段階で行うので、パーサ、出力器、評価器は、合成後のシンタックスを単独のものと同じように扱える。
+図~\ref{fig:cascade}は、同じプログラムを、日本語版（\verb|ja|）、関数呼び出しだけをPython風にした版、ブロックまでJavaScript風にした版、Python風（\verb|pylike|）の順に出力したものである。
+このように、日本語版からPython風まで、構文を連続的に動かせる。
+
+\begin{figure*}[t]
+\footnotesize
+\begin{minipage}[t]{0.48\textwidth}
+\begin{verbatim}
+[ja]
+関数 gcd(a, b)とは『
+    (a, b)における足し算の値回くり返す『
+        もしbが0と等しいなら『
+            抜ける
+        』
+        tに(a, b)における余りの値を代入
+        aにbを代入
+        bにtを代入
+    』
+    aを返す
+』
+((48, 18)におけるgcdの値)における表示の値
+\end{verbatim}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\begin{verbatim}
+[ja:pylike(funcapp)]
+関数 gcd(a, b)とは『
+    足し算(a, b)回くり返す『
+        もしbが0と等しいなら『
+            抜ける
+        』
+        tに余り(a, b)を代入
+        aにbを代入
+        bにtを代入
+    』
+    aを返す
+』
+表示(gcd(48, 18))
+\end{verbatim}
+\end{minipage}
+
+\medskip
+\begin{minipage}[t]{0.48\textwidth}
+\begin{verbatim}
+[ja:jslike(block):pylike(funcapp,assign,stdlib)]
+関数 gcd(a, b)とは{
+    add(a, b)回くり返す{
+        もしbが0と等しいなら{
+            抜ける;
+        }
+        t = mod(a, b);
+        a = b;
+        b = t;
+    }
+    aを返す;
+}
+print(gcd(48, 18));
+\end{verbatim}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\begin{verbatim}
+[pylike]
+def gcd(a, b):
+    for _ in range(add(a, b)):
+        if b == 0:
+            break
+        t = mod(a, b)
+        a = b
+        b = t
+    return a
+print(gcd(48, 18))
+\end{verbatim}
+\end{minipage}
+\caption{合成による構文の連続的な変更（同じASTの4つの出力。末尾の\texttt{print}の行は1つに省略した）}
+\label{fig:cascade}
+\end{figure*}
+
+\section{kolangの実装}
+\label{sec:impl}
+
+kolangはPython 3で実装した。
+実装上の要点を述べる。
+
+\textbf{字句解析器のないパーサ:}
+パーサはパーサコンビネータで書き、文法の1規則を1つの部品にした。
+選択は順序つきで、失敗すると元の位置に戻る（PEG~\cite{Ford2004PEG,Kuramitsu2016Nez}と同様）。
+トークンの正規表現を入力の位置から直接照合するため、字句解析器は持たない。
+語の区切りは、トークンの最後の文字と直後の文字が同じ文字種なら失敗とする規則だけで決める。
+インデントのブロックは、前処理でインデントの増減を仮想トークンに置き換え、括弧のブロックと同じ文法で読む。
+左再帰になる後置の添字\verb|x[i]|は、繰り返しで畳み込む。
+
+\textbf{出力器と変換:}
+出力器は、トークンの正規表現から書くべき文字列を自動で求める。
+コメントは、読み飛ばした位置を記録して、構文解析のあとでASTの文に付けるので、変換しても残る。
+変換\verb|kolang conv|は、出力を読み直してASTと比較し、意味が変わっていないことを毎回確かめる。
+
+\textbf{衝突検査:}
+合成したシンタックスは、区切りの記号が衝突して、書いたプログラムを読み戻せなくなることがある。
+そこで、読み込み時に2段階で検査し、問題があれば原因とともに警告する。
+第一に、トークンの定義だけを見る構造検査である。
+インデント方式なのに\verb|if_end|が空でない、ブロックの終わりが決まらず次の文が本体に入る、コメントの記号が他のトークンにマッチする、といった組み合わせを見つける。
+第二に、構造検査で見つからなかった合成について、構文ごとの単体や組み合わせを含む40個のASTを出力し、読み戻して、元のASTに戻らないものを報告する。
+構造検査が見つける衝突は、スニペットが戻らないものと一致する。
+
+\textbf{限界:}
+PEGは左再帰を読めないため、引数のあとに関数名が来る純粋な後置記法は書けない。
+始まりを示す記号（\verb|mark|）を構文に足せば、PostScript風（\verb|pslike|）で表せる。
+
+\section{関連研究}
+\label{sec:related}
+
+SimPy~\cite{Sun2024SimPy}やToken Sugar~\cite{Sun2025TokenSugar}は、意味論を保ったまま構文だけを変える点でkolangと共通する。
+ただし、目的はトークンコストの削減である。
+学習データにない最小の言語を使って、構文と意味論の学習を分けて調べた研究もある~\cite{Kumar2026PyLang}。
+MultiPL-E~\cite{Cassano2023MultiPLE}は、ベンチマークを既存の言語へ翻訳する。
+構文を拡張できる処理系には、Racketの\verb|#lang|~\cite{Tobin2011Libraries}があるが、人間の利用者のための可変性である。
+kolangは、意味論を保ったまま構文を新しくして、LLMの転移を調べる点で異なる。
+
+\section{まとめ}
+
+本稿では、構文可変な言語処理系kolangを開発した。
+文法を抽象的に定義し、字句をすべて正規表現でパラメータ化して、区切りの記号、ブロックの表し方、関数呼び出しの語順を可変にした。
+シンタックスは要素ごとに合成でき、衝突は読み込み時に検査する。
+今後は、この処理系で構文の要素をひとつずつ入れ替え、LLMのコード生成能力への影響を測る。
+そのために、複数のモデルでの測定、疑似キーワードを使った構文、データ型の拡張を進める。
+
+\begin{table*}[t]
+\begin{small}
+\caption{kolangの抽象構文}
+\label{tab:kolang-bnf}
+\centering
+\begin{tabular}{l c p{8cm}}
+\hline
+非終端記号 & & 定義 \\
+\hline
+\textit{program}     & ::= & ( \textit{statement} $\mid$ \textit{doctest} )* \\
+\textit{block}       & ::= & $X_{\mathrm{block\_begin}}$ ( \textit{statement} $X_{\mathrm{block\_sep}}$ )* $X_{\mathrm{block\_end}}$ \\
+\textit{statement}   & ::= & \textit{assign} $\mid$ \textit{append} $\mid$ \textit{inc} $\mid$ \textit{dec} $\mid$ \textit{if} $\mid$ \textit{repeat} \\
+& & $\mid$ \textit{break} $\mid$ \textit{funcdef} $\mid$ \textit{return} $\mid$ \textit{funcapp} \\
+\textit{assign}      & ::= & $X_{\mathrm{assign\_begin}}$ \textit{expression} $X_{\mathrm{assign\_op}}$ \textit{expression} $X_{\mathrm{assign\_end}}$ \\
+\textit{append}      & ::= & $X_{\mathrm{append\_begin}}$ \textit{expression} $X_{\mathrm{append\_sep}}$ \textit{expression} $X_{\mathrm{append\_end}}$ \\
+\textit{inc}, \textit{dec} & ::= & $X_{\mathrm{inc\_begin}}$ \textit{variable} $X_{\mathrm{inc\_end}}$ $\mid$ $X_{\mathrm{dec\_begin}}$ \textit{variable} $X_{\mathrm{dec\_end}}$ \\
+\textit{if}          & ::= & $X_{\mathrm{if\_begin}}$ \textit{condition} $X_{\mathrm{if\_then}}$ \textit{block} [ \textit{else} ] $X_{\mathrm{if\_end}}$ \\
+\textit{condition}   & ::= & $X_{\mathrm{c\_begin}}$ \textit{expression} $X_{\mathrm{c\_sep}}$ \textit{expression} $X_{\mathrm{c\_end}}$ \quad ($\mathrm{c} \in \{\mathrm{eq}, \mathrm{ne}, \mathrm{lt}, \mathrm{gt}, \mathrm{le}, \mathrm{ge}\}$) \\
+\textit{else}        & ::= & $X_{\mathrm{else\_begin}}$ \textit{block} $X_{\mathrm{else\_end}}$ \\
+\textit{repeat}      & ::= & $X_{\mathrm{repeat\_begin}}$ \textit{expression} $X_{\mathrm{repeat\_do}}$ \textit{block} $X_{\mathrm{repeat\_end}}$ \\
+\textit{break}       & ::= & $X_{\mathrm{break}}$ \\
+\textit{funcdef}     & ::= & $X_{\mathrm{def\_begin}}$ \textit{identifier} $X_{\mathrm{def\_name\_end}}$ $X_{\mathrm{params\_begin}}$ \\
+& & \quad ( \textit{identifier} $X_{\mathrm{param\_sep}}$ )* $X_{\mathrm{params\_end}}$ \textit{block} $X_{\mathrm{def\_end}}$ \\
+\textit{return}      & ::= & $X_{\mathrm{return\_begin}}$ \textit{expression} $X_{\mathrm{return\_end}}$ \\
+\textit{expression}  & ::= & \textit{variable} $\mid$ \textit{string} $\mid$ \textit{number} $\mid$ \textit{boolean} $\mid$ \textit{none} $\mid$ \textit{list} \\
+& & $\mid$ $X_{\mathrm{neg\_begin}}$ \textit{expression} $X_{\mathrm{neg\_end}}$ $\mid$ \textit{funcapp} \\
+& & $\mid$ $X_{\mathrm{grouping\_begin}}$ \textit{expression} $X_{\mathrm{grouping\_end}}$ \\
+\textit{boolean}     & ::= & $X_{\mathrm{true}}$ $\mid$ $X_{\mathrm{false}}$ \\
+\textit{none}        & ::= & $X_{\mathrm{none}}$ \\
+\textit{list}        & ::= & $X_{\mathrm{list\_begin}}$ ( \textit{expression} $X_{\mathrm{list\_sep}}$ )* $X_{\mathrm{list\_end}}$ \\
+\textit{variable}    & ::= & \textit{identifier} \\
+& & $\mid$ \textit{variable} $X_{\mathrm{index\_begin}}$ \textit{expression} $X_{\mathrm{index\_end}}$ \quad (後置) \\
+& & $\mid$ $X_{\mathrm{index\_begin}}$ \textit{variable} $X_{\mathrm{index\_sep}}$ \textit{expression} $X_{\mathrm{index\_end}}$ \quad (前置) \\
+\textit{identifier}  & ::= & \textit{letters} $\mid$ $X_{\mathrm{quote\_begin}}$ \textit{characters} $X_{\mathrm{quote\_end}}$ \\
+\textit{funcapp}     & ::= & $X_{\mathrm{call\_begin}}$ \textit{identifier} $X_{\mathrm{call\_name\_end}}$ ( \textit{expression} $X_{\mathrm{arg\_sep}}$ )* $X_{\mathrm{call\_end}}$ \quad (関数が先) \\
+& & $X_{\mathrm{call\_begin}}$ ( \textit{expression} $X_{\mathrm{arg\_sep}}$ )* $X_{\mathrm{call\_name\_end}}$ \textit{identifier} $X_{\mathrm{call\_end}}$ \quad (引数が先) \\
+\textit{doctest}     & ::= & \verb|">>>"| \textit{funcapp} $\mid$ \textit{variable}\ \textit{LF}\ \textit{JSON} \\
+\hline
+\end{tabular}
+\end{small}
+\end{table*}
+
+\bibliographystyle{ipsjsort}
+\bibliography{myrefs}
+
+\appendix
+
+\section{kolangの抽象構文}
+\label{app:syntax}
+
+表~\ref{tab:kolang-bnf}にkolangの抽象構文を示す。
+$X_{\mathrm{name}}$は、シンタックス定義で差し替えられる区切り記号（トークン）で、添字がトークン名である。
+\texttt{"..."}は固定の終端記号、$(\cdots)^{*}$は0回以上の繰り返し、$[\cdots]$は省略可能を表す。
+\textit{letters}などの字句は、原則として全シンタックスで共通である。
+
+
+\end{document}

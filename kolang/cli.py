@@ -302,6 +302,41 @@ def pass_command(args: argparse.Namespace) -> int:
     return 0 if n_pass == len(results) else 1
 
 
+def build_problems_parser() -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(
+        prog="kolang problems",
+        description="`kolang eval --model` の結果（jsonl）を問題ごとに集計し、正解率と失敗の理由を CSV にする。"
+                    "複数ファイルは、シンタックスやモデルをまたいで同じ task_id にまとめる。",
+    )
+    ap.add_argument("files", nargs="*", metavar="FILE.jsonl", help="結果ファイル（既定: results/*.jsonl）")
+    ap.add_argument("-o", "--output", metavar="FILE.csv", help="出力先（既定: 標準出力）")
+    ap.add_argument("-s", "--syntax", metavar="SYNTAX", help="このシンタックスの記録だけ集計する")
+    ap.add_argument("-m", "--model", metavar="MODEL", help="このモデルの記録だけ集計する")
+    return ap
+
+
+def problems_command(args: argparse.Namespace) -> int:
+    import glob
+    from .problems import load_records, summarize, to_csv
+    files = args.files or sorted(glob.glob("results/*.jsonl"))
+    if not files:
+        raise CliError("結果ファイルがない（results/*.jsonl か FILE を指定する）")
+    recs = load_records(files)
+    if args.syntax:
+        recs = [r for r in recs if r.get("syntax") == args.syntax]
+    if args.model:
+        recs = [r for r in recs if r.get("model") == args.model]
+    if not recs:
+        raise CliError("該当する記録がない")
+    text = to_csv(summarize(recs))
+    if args.output:
+        with open(args.output, "w", encoding="utf-8-sig", newline="") as f:    # Excel 用に BOM つき
+            f.write(text)
+    else:
+        sys.stdout.write(text)
+    return 0
+
+
 def build_cov_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
         prog="kolang cov",
@@ -345,10 +380,12 @@ def build_eval_parser() -> argparse.ArgumentParser:
     ap.add_argument("--model", metavar="NAME",
                     help="このモデル（Hugging Face。claude- で始まれば Anthropic API。要 ANTHROPIC_API_KEY）に prompt を渡してコードを生成し、採点する。結果は jsonl で出す")
     ap.add_argument("--context", metavar="FILE",
-                    help="モデルに渡す言語の説明（--model のとき）。なければ kolang/examples/*.ko を SYNTAX に変換して使う。`none` なら何も足さない（空）。`snippet` / `ebnf`（`snippet,ebnf` も可）なら、それに snippet.SNIPPETS（構文ごとの小さな例）/ BNF（show_ebnf）も足す")
+                    help="モデルに渡す言語の説明（--model のとき）。コンマ区切りで、examples（kolang/examples/*.ko を SYNTAX に変換）のあとに順に足す: `snippet`（snippet.SNIPPETS）/ `ebnf`（show_ebnf の BNF）/ NAME（kolang/spec/NAME.md の ```pylike ブロックを SYNTAX に変換）/ FILE（存在するファイルはそのまま。単独なら examples なし）。`none` は examples を省く（単独なら空）。例: --context syntax,ebnf")
     ap.add_argument("-o", "--output", metavar="FILE", help="jsonl の出力先（--model のとき。既定: results/kolangeval_<syntax>_<model>[_d<N>].jsonl。- なら標準出力）")
     ap.add_argument("-v", "--verbose", action="store_true",
                     help="1 問ごとに、prompt・モデルの出力・採点結果を標準エラーへ表示する（--model のとき）")
+    ap.add_argument("--resume", action="store_true",
+                    help="出力の jsonl がすでにあれば、評価済みの問題を飛ばして続きから評価し、追記する（--model のとき。pass@1 は既存の行も含めて数える）")
     return ap
 
 
@@ -436,6 +473,22 @@ def print_verbose(rec: dict) -> None:
           + (f"  {rec['error_message']}" if rec["error_message"] else ""), file=sys.stderr)
 
 
+def read_done(path: str) -> dict:
+    """`--resume`: 既存の jsonl を task_id → 行 で返す（なければ空。壊れた行、特に末尾の書きかけは無視する）。"""
+    done = {}
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    rec = json.loads(line)
+                    done[rec["task_id"]] = rec
+                except (ValueError, KeyError, TypeError):
+                    continue
+    except FileNotFoundError:
+        pass
+    return done
+
+
 def eval_model_command(args: argparse.Namespace, syn: Syntax, problems: list) -> int:
     """モデルでコードを生成して採点し、1 問 1 行の jsonl を出す。要約は標準エラーへ。"""
     from .kolangeval import build_context, evaluate_recorded, default_output_name, is_claude, make_claude_generator, make_hf_generator
@@ -447,8 +500,22 @@ def eval_model_command(args: argparse.Namespace, syn: Syntax, problems: list) ->
     path = args.output or default_output_name(syn, args.model, args.difficulty)
     if path != "-":
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    out = sys.stdout if path == "-" else open(path, "w", encoding="utf-8")
     n_pass = scored = 0
+    mode = "w"
+    if getattr(args, "resume", False):
+        if path == "-":
+            raise CliError("--resume は -o - と一緒に使えません")
+        done = read_done(path)
+        n_pass, scored = sum(r["doctest"]["ok"] for r in done.values()), len(done)
+        problems = [p for p in problems if p["task_id"] not in done]
+        mode = "a"
+        print(f"続きから: 評価済み {scored} 問（合格 {n_pass}）、残り {len(problems)} 問", file=sys.stderr)
+    out = sys.stdout if path == "-" else open(path, mode, encoding="utf-8")
+    if mode == "a" and out.tell() > 0:
+        with open(path, "rb") as f:                      # 書きかけの末尾の行があれば、改行で閉じてから追記する
+            f.seek(-1, os.SEEK_END)
+            if f.read(1) != b"\n":
+                out.write("\n")
     try:
         for rec in evaluate_recorded(syn, problems, generate, args.model):
             out.write(json.dumps(rec, ensure_ascii=False) + "\n")
@@ -510,6 +577,8 @@ def main(argv: Optional[list] = None) -> int:
             return pass_command(build_pass_parser().parse_args(argv[1:]))
         if argv and argv[0] == "cov":
             return cov_command(build_cov_parser().parse_args(argv[1:]))
+        if argv and argv[0] == "problems":
+            return problems_command(build_problems_parser().parse_args(argv[1:]))
         if argv and argv[0] == "check":
             return check_command(build_check_parser().parse_args(argv[1:]))
         if argv and argv[0] == "eval":

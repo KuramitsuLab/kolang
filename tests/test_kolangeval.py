@@ -86,6 +86,25 @@ class TestModelEval(unittest.TestCase):
         self.assertIn("# snippet: assign", both)
         self.assertIn(show_ebnf(syn).rstrip(), both)
 
+    def test_context_spec(self):
+        from kolang.ebnf import show_ebnf
+        from kolang.kolangeval import build_context
+        from kolang.syntax import load_syntax
+        syn = load_syntax("jalike")
+        base = build_context(syn)
+        ctx = build_context(syn, "syntax,ebnf")
+        self.assertTrue(ctx.startswith(base))
+        self.assertIn("# kolang の書き方", ctx)
+        self.assertIn("```jalike", ctx.split("# kolang の書き方")[1])
+        self.assertNotIn("```pylike", ctx)
+        self.assertLess(ctx.index("# kolang の書き方"), ctx.index(show_ebnf(syn).rstrip()))
+        self.assertNotIn("# kolang の書き方", build_context(syn, "ebnf"))
+        none = build_context(syn, "none,syntax")
+        self.assertNotIn("fizzbuzz", none)
+        self.assertIn("# kolang の書き方", none)
+        with self.assertRaises(OSError):
+            build_context(syn, "nosuchspec")
+
     def test_context_file(self):
         import tempfile
         from kolang.kolangeval import build_context
@@ -93,6 +112,17 @@ class TestModelEval(unittest.TestCase):
         with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8") as f:
             f.write("説明")
         self.assertEqual(build_context(load_syntax("jalike"), f.name), "説明")
+
+    def test_print_verbose(self):
+        import contextlib, io
+        from kolang.cli import print_verbose
+        rec = {"task_id": "HumanEval/0", "syntax": "pylike", "model": "m", "prompt": "PROMPT",
+               "output": "OUTPUT", "doctest": {"ok": False, "passed": 1, "total": 2}, "error_message": "ERR"}
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            print_verbose(rec)
+        for word in ("HumanEval/0", "PROMPT", "OUTPUT", "FAIL", "1/2", "ERR"):
+            self.assertIn(word, err.getvalue())
 
     def test_extract_code(self):
         from kolang.kolangeval import extract_code
@@ -113,17 +143,6 @@ class TestModelEval(unittest.TestCase):
             self.assertEqual(list(r), ["task_id", "model", "syntax", "prompt", "output",
                                        "input_tokens", "output_tokens", "code", "doctest", "error_message"])
             self.assertEqual((r["model"], r["syntax"], r["prompt"]), ("fake", "jalike", p["prompt"]))
-    def test_print_verbose(self):
-        import contextlib, io
-        from kolang.cli import print_verbose
-        rec = {"task_id": "HumanEval/0", "syntax": "pylike", "model": "m", "prompt": "PROMPT",
-               "output": "OUTPUT", "doctest": {"ok": False, "passed": 1, "total": 2}, "error_message": "ERR"}
-        err = io.StringIO()
-        with contextlib.redirect_stderr(err):
-            print_verbose(rec)
-        for word in ("HumanEval/0", "PROMPT", "OUTPUT", "FAIL", "1/2", "ERR"):
-            self.assertIn(word, err.getvalue())
-
             self.assertTrue(r["output"].startswith("説明"))
             self.assertNotIn("```", r["code"])
             self.assertTrue(r["doctest"]["ok"])
@@ -169,3 +188,38 @@ class TestModelEval(unittest.TestCase):
         from kolang.kolangeval import is_claude
         self.assertTrue(is_claude("claude-haiku-5.5"))
         self.assertFalse(is_claude("Qwen/Qwen2.5-Coder-1.5B-Instruct"))
+
+    def test_resume(self):
+        import contextlib, io, json, os, tempfile
+        from unittest import mock
+        from kolang import kolangeval
+        from kolang.kolangeval import Generation, reference_solver
+        calls = []
+
+        def fake_make(model, context):
+            def gen(p, s):
+                calls.append(p["task_id"])
+                return Generation("```jalike\n" + reference_solver(p, s) + "```\n", 1, 1)
+            return gen
+        with tempfile.TemporaryDirectory() as d, \
+                mock.patch.object(kolangeval, "make_claude_generator", fake_make):
+            out = os.path.join(d, "r.jsonl")
+            args = ["eval", "jalike", "--model", "claude-fake", "-t", "0", "1", "2", "-o", out]
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err):
+                main(args[:-2] + ["-t", "0", "-o", out])               # まず 1 問だけ
+                with open(out, "a", encoding="utf-8") as f:
+                    f.write('{"task_id": "壊れ')                         # 書きかけの行
+                calls.clear()
+                rc = main(args + ["--resume"])
+            self.assertEqual(calls, ["HumanEval/1", "HumanEval/2"])
+            self.assertEqual(rc, 0)
+            self.assertIn("3/3", err.getvalue())
+            ids = []
+            with open(out, encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        ids.append(json.loads(line)["task_id"])
+                    except ValueError:
+                        pass
+            self.assertEqual(ids, ["HumanEval/0", "HumanEval/1", "HumanEval/2"])

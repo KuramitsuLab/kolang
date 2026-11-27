@@ -113,3 +113,58 @@ print(add_pair(add_pair(1, 2), double(3)))     # 引数に呼び出しを入れ�
 print(no_args())
 print(fact(5))
 ```
+
+### 標準ライブラリの一巡
+
+値も演算も Python のものなので、結果は Python と同じ。
+
+```pylike
+
+# --- 出力 ---
+print("print は何個でも引数にできる", 1, True, None)
+
+# --- 四則演算・剰余・べき乗（演算子はなく、関数で書く）---
+add(1, 2)            # 3
+sub(10, 4)           # 6
+mul(6, 7)            # 42
+div(7, 2)            # 3.5（真の除算。整数にしたいときは int で包む）
+mod(17, 5)           # 2
+pow(2, 10)           # 1024
+int(div(7, 2))       # 3（切り捨て）
+
+# add は文字列・リストの連結にも使える
+add("ko", "lang")    # kolang
+add([1, 2], [3])     # [1, 2, 3]
+
+# --- 型の変換 ---
+int("123")           # 123
+float("1.5")         # 1.5
+str(3.5)             # 3.5（文字列）
+bool(0)              # False
+bool([1])            # True
+list("abc")          # ['a', 'b', 'c']
+list(range(4))       # [0, 1, 2, 3]
+
+# --- 数 ---
+abs(-5)              # 5
+round(3.14159, 2)    # 3.14
+round(7.6)           # 8
+max(3, 9, 4)         # 9
+min([3, 9, 4])       # 3
+sum([1, 2, 3, 4])    # 10
+
+# --- 長さ・範囲・並べ替え ---
+len("kolang")        # 6
+len([1, 2, 3])       # 3
+
+# --- 文字コード ---
+ord("A")             # 65
+chr(97)              # a
+chr(add(ord("a"), 1))  # b（次の文字）
+
+# --- 組み合わせの例: 平均を小数 1 桁で ---
+def average(xs):
+    return round(div(sum(xs), len(xs)), 1)
+
+average([1, 2, 3, 4])    # 2.5
+```

@@ -1,19 +1,19 @@
 # Fdb version 4
-["bibtex main"] 1795531974 "main.aux" "main.bbl" "main" 1795532108 0
+["bibtex main"] 1795590383 "main.aux" "main.bbl" "main" 1795590384 0
   "./ipsjsort.bst" 1795134700 24572 c46c9614660b8637c60b25daba6b51d6 ""
-  "./myrefs.bib" 1795400842 11316 dbe7b71d727b8a007083b7a319a81609 ""
-  "main.aux" 1795532107 7061 d2410edb2e01c460187ffc1d671a3dce "latex"
+  "./myrefs.bib" 1795589673 11683 3e8f4d92cbcf8dd1e49fbba734fcc7a9 ""
+  "main.aux" 1795590383 7114 0750df28af00c531554a695a2f47d968 "latex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["dvipdf"] 1795532107 "main.dvi" "main.pdf" "main" 1795532108 0
-  "main.dvi" 1795532107 84036 76c4c480f40cf57bb03ca607fb26f0cb "latex"
+["dvipdf"] 1795590384 "main.dvi" "main.pdf" "main" 1795590384 0
+  "main.dvi" 1795590383 85860 6e903dfb1fb5202381852fb0aff2f138 "latex"
   (generated)
   "main.pdf"
   (rewritten before read)
-["latex"] 1795532107 "/Users/kimio/Git/kolang/tex/main.tex" "main.dvi" "main" 1795532108 0
-  "/Users/kimio/Git/kolang/tex/main.tex" 1795532107 48910 646bead4f93cab03a2057a27845bf6f4 ""
+["latex"] 1795590383 "/Users/kimio/Git/kolang/tex/main.tex" "main.dvi" "main" 1795590384 0
+  "/Users/kimio/Git/kolang/tex/main.tex" 1795590380 49833 a9e82978ae34c29950b1f2483cec1ea3 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/tfm/ptex-fonts/jis/jis.tfm" 1463434352 468 53f854284f6afa6c36aaa2d1090ecc12 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/tfm/ptex-fonts/jis/jisg.tfm" 1463434352 468 53f854284f6afa6c36aaa2d1090ecc12 ""
@@ -76,9 +76,9 @@
   "ipsj.cls" 1795134700 124312 91e3ac41836e0231003a8dec049b353b ""
   "ipsjprosym.cls" 1795134700 1145 a98e64c2f4eef2cd695c5762d8600212 ""
   "ipsjtech.sty" 1795134700 6218 e752553af768fcae894e19205d3a7d42 ""
-  "main.aux" 1795532107 7061 d2410edb2e01c460187ffc1d671a3dce "latex"
-  "main.bbl" 1795531974 7758 9819c1716aca8e170f17a020ad29e94c "bibtex main"
-  "main.tex" 1795532107 48910 646bead4f93cab03a2057a27845bf6f4 ""
+  "main.aux" 1795590383 7114 0750df28af00c531554a695a2f47d968 "latex"
+  "main.bbl" 1795590383 8046 1b0dc1c993000253b2d68db221c9410a "bibtex main"
+  "main.tex" 1795590380 49833 a9e82978ae34c29950b1f2483cec1ea3 ""
   (generated)
   "main.aux"
   "main.dvi"

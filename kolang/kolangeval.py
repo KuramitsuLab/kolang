@@ -9,7 +9,11 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import re
+import signal
+import threading
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable, Optional
@@ -21,17 +25,18 @@ from .unparser import convert, defined_names
 
 DEFAULT_FILE = Path(__file__).resolve().parent / "kolangeval.jsonl"
 EXAMPLES_DIR = Path(__file__).resolve().parent / "examples"
+SPEC_DIR = Path(__file__).resolve().parent / "spec"
 RESULTS_DIR = "results"
 DEFAULT_MODEL = "Qwen/Qwen2.5-Coder-1.5B-Instruct"
 
 # 問題（jsonl の 1 行）と、評価するシンタックスから、そのシンタックスのコードを返す。
 Solver = Callable[[dict, Syntax], str]
-class Generation(str):
-    """モデルの返答（生の出力）に、トークン数を添えたもの。ただの str でも Generator の返り値にできる（数は null）。"""
 class FatalGenerationError(ValueError):
     """認証の失敗など、何問やっても直らないエラー。不合格にせず、評価を止める。"""
 
 
+class Generation(str):
+    """モデルの返答（生の出力）に、トークン数を添えたもの。ただの str でも Generator の返り値にできる（数は null）。"""
     input_tokens: Optional[int] = None      # 入力（チャットテンプレートと書き出しを含む）
     output_tokens: Optional[int] = None     # 新しく生成した分
 
@@ -65,40 +70,69 @@ def reference_solver(problem: dict, syntax: Syntax) -> str:
     return convert(problem["pylike"], "pylike", syntax)
 
 
+def spec_path(name: str) -> Optional[Path]:
+    """`--context` の名前 → `kolang/spec/NAME.md`（`.md` 付きでも可）。なければ None。"""
+    f = SPEC_DIR / (name if name.endswith(".md") else name + ".md")
+    return f if f.is_file() else None
+
+
+def convert_spec(text: str, syntax: Syntax) -> str:
+    """仕様の文書の ```シンタックス ブロック（pylike など）を、syntax に変換する（文章は残す。読めないブロックは触らない）。"""
+    from .kofile import map_blocks
+
+    def one(spec: str, code: str):
+        try:
+            return syntax.name, convert(code, spec, syntax)
+        except Exception:
+            return None
+    return map_blocks(text, one)[0].rstrip()
+
+
 def build_context(syntax: Syntax, path: Optional[str] = None) -> str:
     """モデルに渡す言語の説明（コンテキスト）。
 
-    path があればその中身をそのまま使う。なければ `kolang/examples/*.ko` を syntax に変換して並べる。
-    path が `none`（同名のファイルがないとき）なら、何も足さない（空のコンテキスト。システムメッセージなし）。
-    path が `snippet` / `ebnf`（コンマで両方も可。同名のファイルがないとき）なら、examples に続けて
-    `snippet.SNIPPETS`（そのシンタックスで書けないものは省く）/ `show_ebnf` の BNF も並べる。
+    path はコンマ区切りの項目の並びで、最初に examples（`kolang/examples/*.ko` を syntax に変換）を置き、
+    項目を指定の順に足す。項目は次のどれか:
+    - `none`: 何も足さない（`none` だけなら空のコンテキスト。システムメッセージなし）。
+    - `snippet`: `snippet.SNIPPETS`（そのシンタックスで書けないものは省く）。
+    - `ebnf`: `show_ebnf` の BNF。
+    - 存在するファイルのパス: 中身をそのまま使う（単独なら examples も足さず、その中身だけ）。
+    - NAME: `kolang/spec/NAME.md` の ```pylike などのブロックを syntax に変換したもの。
     """
-    if path == "none" and not Path(path).exists():
+    items = [x.strip() for x in path.split(",") if x.strip()] if path else []
+    if items == ["none"]:
         return ""
-    extras = set(path.split(",")) if path and not Path(path).exists() else set()
-    if not extras <= {"snippet", "ebnf"}:
-        extras = set()
-    if path and not extras:
-        return Path(path).read_text(encoding="utf-8")
-    with_snippets = "snippet" in extras
+    if len(items) == 1 and Path(items[0]).is_file():
+        return Path(items[0]).read_text(encoding="utf-8")
     from .kofile import join_ko, split_ko
-    parts = ["以下は kolang のコードの例です。同じ書き方でコードを書いてください。"]
-    for f in sorted(EXAMPLES_DIR.glob("*.ko")):
-        spec, code = split_ko(f.read_text(encoding="utf-8"))
-        parts.append(f"# {f.name}\n" + join_ko(syntax.name, convert(code, spec, syntax)).rstrip())
-    if with_snippets:
-        from .snippet import SNIPPETS
-        from .unparser import UnparseError, unparse
-        parts.append("以下は、構文ごとの小さな例です。")
-        for label, tree in SNIPPETS.items():
-            try:
-                text = unparse(tree, syntax)
-            except UnparseError:
-                continue
-            parts.append(f"# snippet: {label}\n" + join_ko(syntax.name, text).rstrip())
-    if "ebnf" in extras:
-        from .ebnf import show_ebnf
-        parts.append("以下は、このシンタックスの文法（BNF）です。\n" + show_ebnf(syntax).rstrip())
+    parts = []
+    if "none" not in items:
+        parts.append("以下は kolang のコードの例です。同じ書き方でコードを書いてください。")
+        for f in sorted(EXAMPLES_DIR.glob("*.ko")):
+            spec, code = split_ko(f.read_text(encoding="utf-8"))
+            parts.append(f"# {f.name}\n" + join_ko(syntax.name, convert(code, spec, syntax)).rstrip())
+    for item in items:
+        if item == "none":
+            continue
+        if item == "snippet":
+            from .snippet import SNIPPETS
+            from .unparser import UnparseError, unparse
+            parts.append("以下は、構文ごとの小さな例です。")
+            for label, tree in SNIPPETS.items():
+                try:
+                    text = unparse(tree, syntax)
+                except UnparseError:
+                    continue
+                parts.append(f"# snippet: {label}\n" + join_ko(syntax.name, text).rstrip())
+        elif item == "ebnf":
+            from .ebnf import show_ebnf
+            parts.append("以下は、このシンタックスの文法（BNF）です。\n" + show_ebnf(syntax).rstrip())
+        elif Path(item).is_file():
+            parts.append(Path(item).read_text(encoding="utf-8").rstrip())
+        elif spec_path(item):
+            parts.append(convert_spec(spec_path(item).read_text(encoding="utf-8"), syntax))
+        else:
+            raise OSError(f"{item}: snippet / ebnf / none / ファイル / kolang/spec/{item}.md のどれでもありません")
     return "\n\n".join(parts)
 
 
@@ -180,6 +214,9 @@ def make_claude_generator(model_name: str, context: str = "", max_tokens: int = 
     新しいモデルは assistant の書き出し（prefill）を受け付けない（400）ので、書き出す内容（``` とヘッダ）は
     ユーザーメッセージの指示として渡す。temperature は既定のまま（モデルによっては変更できない）。
     """
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        raise ValueError("環境変数 ANTHROPIC_API_KEY が設定されていません。"
+                         "export ANTHROPIC_API_KEY=sk-ant-... のように設定してから実行してください")
     import anthropic
     model_id = model_name.replace(".", "-")
     client = anthropic.Anthropic()
@@ -214,6 +251,27 @@ def to_record(problem: dict, result: Result, syntax: Syntax, model: Optional[str
             "error_message": result.reason or None}
 
 
+TIME_LIMIT = 30   # 1 問の実行（プログラム + doctest）の制限時間（秒）
+
+
+@contextmanager
+def time_limit(seconds: int = TIME_LIMIT):
+    """seconds 秒を超えたら TimeoutError。signal.alarm なので、Unix のメインスレッドだけ（それ以外は制限なし）。"""
+    if not hasattr(signal, "SIGALRM") or threading.current_thread() is not threading.main_thread():
+        yield
+        return
+
+    def on_alarm(signum, frame):
+        raise TimeoutError(f"{seconds} 秒を超えた")
+    old = signal.signal(signal.SIGALRM, on_alarm)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, old)
+
+
 def check(problem: dict, syntax: Syntax, solver: Solver = reference_solver) -> Result:
     """1 問を、コードの用意 → 読み込み → 実行 → doctest の順に確かめる。"""
     from .pyeval import PyEval
@@ -225,13 +283,16 @@ def check(problem: dict, syntax: Syntax, solver: Solver = reference_solver) -> R
         program = parse(code, syntax)
         # doctest の式は全シンタックスで pylike の書き方。標準関数の名前は parse が syntax の名前にする
         then = parse(problem["doctest"], syntax, defined_names(program))
+    except FatalGenerationError:
+        raise
     except Exception as e:                           # noqa: BLE001  変換・生成・構文の失敗は、不合格の理由にする
         return Result(task, False, reason=f"{type(e).__name__}: {e}".splitlines()[0])
     interp = PyEval(stdout=io.StringIO(), syntax=syntax)
     reason = ""
     try:
-        interp.run(program)
-        interp.run(then)
+        with time_limit():
+            interp.run(program)
+            interp.run(then)
     except Exception as e:                           # noqa: BLE001
         reason = f"{'SyntaxError' if isinstance(e, SyntaxError) else type(e).__name__}: {e}"
     total = len(interp.doctests)
@@ -259,5 +320,3 @@ def evaluate_recorded(syntax: Syntax, problems: Iterable[dict], generate: Genera
 
 def evaluate(syntax: Syntax, problems: Iterable[dict], solver: Solver = reference_solver) -> list:
     return [check(p, syntax, solver) for p in problems]
-    except FatalGenerationError:
-        raise
